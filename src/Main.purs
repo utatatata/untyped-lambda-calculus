@@ -39,6 +39,7 @@ alphaConversion sub@(Tuple var redex) lambda@(LambdaAbstraction (Tuple bound exp
 alphaConversion sub (Application (Tuple expr arg)) = Application <$> (Tuple `onM` alphaConversion sub) expr arg
 
 betaReduction :: Application -> Maybe Expression
+betaReduction (Tuple (LambdaAbstraction (Tuple bound expr)) arg) = alphaConversion (Tuple bound arg) expr
 betaReduction _ = Nothing
 
 etaConversion :: Expression -> Maybe Expression
