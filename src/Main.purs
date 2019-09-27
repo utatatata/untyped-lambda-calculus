@@ -42,13 +42,11 @@ betaReduction :: Application -> Maybe Expression
 betaReduction (Tuple (LambdaAbstraction (Tuple bound expr)) arg) = alphaConversion (Tuple bound arg) expr
 betaReduction _ = Nothing
 
-etaConversion :: Expression -> Maybe Expression
-etaConversion (Application (Tuple (LambdaAbstraction (Tuple bound expr)) (Identifier arg))) = if bound == arg then
+etaConversion :: LambdaAbstraction -> Identifier -> Maybe Expression
+etaConversion (Tuple bound expr) arg = if bound == arg then
   pure expr
 else
   Nothing
-
-etaConversion _ = Nothing
 
 main :: Effect Unit
 main = do
