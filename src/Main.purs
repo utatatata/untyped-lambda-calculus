@@ -2,7 +2,7 @@ module Main where
 
 import Prelude
 import Data.Function (on)
-import Data.Maybe (Maybe(..))
+import Data.Int (decimal, toStringAs)
 import Data.List (List(..), (:), filter, union, notElem)
 import Data.Tuple (Tuple(..))
 import Effect (Effect)
@@ -18,24 +18,53 @@ data Expression
 
 type Identifier
   = String
-type LambdaAbstraction = Tuple Identifier Expression
-type Application = Tuple Expression Expression
+
+type LambdaAbstraction
+  = Tuple Identifier Expression
+
+type Application
+  = Tuple Expression Expression
 
 free :: Expression -> List Identifier
 free (Identifier id) = id : Nil
+
 free (LambdaAbstraction (Tuple bound expr)) = filter (_ /= bound) $ free expr
+
 free (Application (Tuple expr arg)) = (union `on` free) expr arg
 
-data Substitution = Substitution Identifier Expression
+shadow :: Identifier -> Expression -> Expression
+shadow var expr = replace 1
+  where
+  freeVars = free expr
+
+  replace :: Int -> Expression
+  replace n =
+    let
+      shadowVar = var <> "_" <> (toStringAs decimal n)
+    in
+      if var `notElem` freeVars then
+        alphaConversion (Substitution var (Identifier shadowVar)) expr
+      else
+        replace $ n + 1
+
+data Substitution
+  = Substitution Identifier Expression
 
 alphaConversion :: Substitution -> Expression -> Expression
 alphaConversion (Substitution match replacement) (Identifier id) = if match == id then replacement else (Identifier id)
-alphaConversion sub@(Substitution match replacement) lambda@(LambdaAbstraction (Tuple bound expr)) = if match == bound then lambda else
+
+alphaConversion sub@(Substitution match replacement) lambda@(LambdaAbstraction (Tuple bound expr)) = if match == bound then
+  lambda
+else if bound `notElem` (free replacement) then
   LambdaAbstraction (Tuple bound $ alphaConversion sub expr)
+else
+  LambdaAbstraction (Tuple bound $ alphaConversion (Substitution match $ shadow bound replacement) expr)
+
 alphaConversion sub (Application (Tuple expr arg)) = Application $ (Tuple `on` (alphaConversion sub)) expr arg
 
 betaReduction :: Application -> Expression
 betaReduction (Tuple (LambdaAbstraction (Tuple bound expr)) arg) = alphaConversion (Substitution bound arg) expr
+
 betaReduction app = Application app
 
 etaConversion :: LambdaAbstraction -> Identifier -> Expression
@@ -43,7 +72,6 @@ etaConversion lambda@(Tuple bound expr) arg = if bound == arg then
   expr
 else
   LambdaAbstraction lambda
-
 
 data NormalForm
   = NFIdentifier Identifier
@@ -53,7 +81,6 @@ data NormalForm
 data NFApplication
   = NFIdentApp Identifier NormalForm
   | NFAppApp NFApplication NormalForm
-
 
 main :: Effect Unit
 main = do
