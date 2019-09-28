@@ -81,6 +81,27 @@ data NFApplication
   = NFIdentApp Identifier NormalForm
   | NFAppApp NFApplication NormalForm
 
+asExpression :: NormalForm -> Expression
+asExpression (NFIdentifier id) = Identifier id
+
+asExpression (NFLambdaAbstraction bound nf) = LambdaAbstraction $ Tuple bound $ asExpression nf
+
+asExpression (NFApplication (NFIdentApp id nf)) = Application $ Tuple (Identifier id) $ asExpression nf
+
+asExpression (NFApplication (NFAppApp nfApp nf)) = Application $ Tuple (asExpression $ NFApplication nfApp) $ asExpression nf
+
+callByName :: Expression -> NormalForm
+callByName (Identifier id) = NFIdentifier id
+
+callByName (LambdaAbstraction (Tuple bound expr)) = NFLambdaAbstraction bound $ callByName expr
+
+callByName (Application (Tuple (Identifier id) arg)) = NFApplication $ NFIdentApp id $ callByName arg
+
+callByName (Application (Tuple expr arg)) = case callByName expr of
+  NFIdentifier id -> NFApplication $ NFIdentApp id $ callByName arg
+  NFApplication nfApp -> NFApplication $ NFAppApp nfApp $ callByName arg
+  NFLambdaAbstraction bound nf -> callByName $ Application $ Tuple (LambdaAbstraction $ Tuple bound $ asExpression nf) arg
+
 main :: Effect Unit
 main = do
   log "🍝"
