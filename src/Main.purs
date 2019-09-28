@@ -11,42 +11,49 @@ import Effect.Console (log)
 onM :: forall f a b c. Apply f => (b -> b -> c) -> (a -> f b) -> a -> a -> f c
 onM f g x y = f <$> g x <*> g y
 
-type Identifier
-  = String
-type LambdaAbstraction = Tuple Identifier Expression
-type Application = Tuple Expression Expression
-
 data Expression
   = Identifier Identifier
   | LambdaAbstraction LambdaAbstraction
   | Application Application
 
+type Identifier
+  = String
+type LambdaAbstraction = Tuple Identifier Expression
+type Application = Tuple Expression Expression
+
 free :: Expression -> List Identifier
-free (Identifier var) = var : Nil
+free (Identifier id) = id : Nil
 free (LambdaAbstraction (Tuple bound expr)) = filter (_ /= bound) $ free expr
 free (Application (Tuple expr arg)) = (union `on` free) expr arg
 
 type Substitution = Tuple Identifier Expression
 
-alphaConversion :: Substitution -> Expression -> Maybe Expression
-alphaConversion (Tuple var redex) (Identifier id) = pure if var == id then redex else (Identifier id)
-alphaConversion sub@(Tuple var redex) lambda@(LambdaAbstraction (Tuple bound expr)) = if var == bound then pure lambda else
-    if notElem bound $ free redex then
-      LambdaAbstraction <$> Tuple bound <$> (alphaConversion sub expr)
-    else
-      Nothing
+alphaConversion :: Substitution -> Expression -> Expression
+alphaConversion (Tuple match replacement) (Identifier id) = if match == id then replacement else (Identifier id)
+alphaConversion sub@(Tuple match replacement) lambda@(LambdaAbstraction (Tuple bound expr)) = if match == bound then lambda else
+  LambdaAbstraction (Tuple bound $ alphaConversion sub expr)
+alphaConversion sub (Application (Tuple expr arg)) = Application $ (Tuple `on` (alphaConversion sub)) expr arg
 
-alphaConversion sub (Application (Tuple expr arg)) = Application <$> (Tuple `onM` alphaConversion sub) expr arg
-
-betaReduction :: Application -> Maybe Expression
+betaReduction :: Application -> Expression
 betaReduction (Tuple (LambdaAbstraction (Tuple bound expr)) arg) = alphaConversion (Tuple bound arg) expr
-betaReduction _ = Nothing
+betaReduction app = Application app
 
-etaConversion :: LambdaAbstraction -> Identifier -> Maybe Expression
-etaConversion (Tuple bound expr) arg = if bound == arg then
-  pure expr
+etaConversion :: LambdaAbstraction -> Identifier -> Expression
+etaConversion lambda@(Tuple bound expr) arg = if bound == arg then
+  expr
 else
-  Nothing
+  LambdaAbstraction lambda
+
+
+data NormalForm
+  = NFIdentifier Identifier
+  | NFLambdaAbstraction Identifier NormalForm
+  | NFApplication NFApplication
+
+data NFApplication
+  = NFIdentApp Identifier NormalForm
+  | NFAppApp NFApplication NormalForm
+
 
 main :: Effect Unit
 main = do
