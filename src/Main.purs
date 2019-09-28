@@ -55,7 +55,7 @@ alphaConversion (Substitution match replacement) (Identifier id) = if match == i
 
 alphaConversion sub@(Substitution match replacement) lambda@(LambdaAbstraction (Tuple bound expr)) = if match == bound then
   lambda
-else if bound `notElem` (free replacement) then
+else if bound `notElem` free replacement then
   LambdaAbstraction (Tuple bound $ alphaConversion sub expr)
 else
   LambdaAbstraction (Tuple bound $ alphaConversion (Substitution match $ shadow bound replacement) expr)
@@ -67,11 +67,10 @@ betaReduction (Tuple (LambdaAbstraction (Tuple bound expr)) arg) = alphaConversi
 
 betaReduction app = Application app
 
-etaConversion :: LambdaAbstraction -> Identifier -> Expression
-etaConversion lambda@(Tuple bound expr) arg = if bound == arg then
-  expr
-else
-  LambdaAbstraction lambda
+etaConversion :: LambdaAbstraction -> Expression
+etaConversion lambda@(Tuple bound (Application (Tuple expr (Identifier id)))) = if bound == id && bound `notElem` free expr then expr else LambdaAbstraction lambda
+
+etaConversion lambda = LambdaAbstraction lambda
 
 data NormalForm
   = NFIdentifier Identifier
