@@ -11,6 +11,7 @@ You can edit this file as you like.
     , "lists"
     , "maybe"
     , "psci-support"
+    , "spec"
     , "tuples"
     ]
 , packages =
