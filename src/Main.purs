@@ -26,16 +26,16 @@ free (Identifier id) = id : Nil
 free (LambdaAbstraction (Tuple bound expr)) = filter (_ /= bound) $ free expr
 free (Application (Tuple expr arg)) = (union `on` free) expr arg
 
-type Substitution = Tuple Identifier Expression
+data Substitution = Substitution Identifier Expression
 
 alphaConversion :: Substitution -> Expression -> Expression
-alphaConversion (Tuple match replacement) (Identifier id) = if match == id then replacement else (Identifier id)
-alphaConversion sub@(Tuple match replacement) lambda@(LambdaAbstraction (Tuple bound expr)) = if match == bound then lambda else
+alphaConversion (Substitution match replacement) (Identifier id) = if match == id then replacement else (Identifier id)
+alphaConversion sub@(Substitution match replacement) lambda@(LambdaAbstraction (Tuple bound expr)) = if match == bound then lambda else
   LambdaAbstraction (Tuple bound $ alphaConversion sub expr)
 alphaConversion sub (Application (Tuple expr arg)) = Application $ (Tuple `on` (alphaConversion sub)) expr arg
 
 betaReduction :: Application -> Expression
-betaReduction (Tuple (LambdaAbstraction (Tuple bound expr)) arg) = alphaConversion (Tuple bound arg) expr
+betaReduction (Tuple (LambdaAbstraction (Tuple bound expr)) arg) = alphaConversion (Substitution bound arg) expr
 betaReduction app = Application app
 
 etaConversion :: LambdaAbstraction -> Identifier -> Expression
