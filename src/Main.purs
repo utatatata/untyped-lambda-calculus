@@ -16,6 +16,17 @@ data Expression
   | LambdaAbstraction LambdaAbstraction
   | Application Application
 
+instance eqExpression :: Eq Expression where
+  eq (Identifier x) (Identifier y) = eq x y
+  eq (LambdaAbstraction x) (LambdaAbstraction y) = eq x y
+  eq (Application x) (Application y) = eq x y
+  eq _ _ = false
+
+instance showExpression :: Show Expression where
+  show (Identifier x) = "(Identifier " <> show x <> ")"
+  show (LambdaAbstraction x) = "(LambdaAbstraction " <> show x <> ")"
+  show (Application x) = "(Application " <> show x <> ")"
+
 type Identifier
   = String
 
@@ -42,7 +53,7 @@ shadow var expr = replace 1
     let
       shadowVar = var <> "_" <> (toStringAs decimal n)
     in
-      if var `notElem` freeVars then
+      if shadowVar `notElem` freeVars then
         alphaConversion (Substitution var (Identifier shadowVar)) expr
       else
         replace $ n + 1
@@ -77,9 +88,29 @@ data NormalForm
   | NFLambdaAbstraction Identifier NormalForm
   | NFApplication NFApplication
 
+instance eqNormalForm :: Eq NormalForm where
+  eq (NFIdentifier x) (NFIdentifier y) = eq x y
+  eq (NFLambdaAbstraction x f) (NFLambdaAbstraction y g) = eq x y && eq f g
+  eq (NFApplication x) (NFApplication y) = eq x y
+  eq _ _ = false
+
+instance showNormalForm :: Show NormalForm where
+  show (NFIdentifier id) = "(NFIdentifier " <> show id <> ")"
+  show (NFLambdaAbstraction x f) = "(NFLambdaAbstraction " <> show x <> " " <> show f <> ")"
+  show (NFApplication x) = "(NFApplication " <> show x <> ")"
+
 data NFApplication
   = NFIdentApp Identifier NormalForm
   | NFAppApp NFApplication NormalForm
+
+instance eqNFApplication :: Eq NFApplication where
+  eq (NFIdentApp x f) (NFIdentApp y g) = eq x y && eq f g
+  eq (NFAppApp x f) (NFAppApp y g) = eq x y && eq f g
+  eq _ _ = false
+
+instance showNFApplication :: Show NFApplication where
+  show (NFIdentApp x f) = "(NFIdentApp " <> show x <> " " <> show f <> ")"
+  show (NFAppApp x f) = "(NFAppApp " <> show x <> " " <> show f <> ")"
 
 asExpression :: NormalForm -> Expression
 asExpression (NFIdentifier id) = Identifier id
@@ -96,6 +127,8 @@ callByName (Identifier id) = NFIdentifier id
 callByName (LambdaAbstraction (Tuple bound expr)) = NFLambdaAbstraction bound $ callByName expr
 
 callByName (Application (Tuple (Identifier id) arg)) = NFApplication $ NFIdentApp id $ callByName arg
+
+callByName (Application app@(Tuple (LambdaAbstraction _) _)) = callByName $ betaReduction app
 
 callByName (Application (Tuple expr arg)) = case callByName expr of
   NFIdentifier id -> NFApplication $ NFIdentApp id $ callByName arg
