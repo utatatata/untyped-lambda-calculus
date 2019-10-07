@@ -1,4 +1,6 @@
-module UntypedLambda.Parser where
+module UntypedLambda.Parser
+  ( expression
+  ) where
 
 import Prelude hiding (between)
 import Control.Alt ((<|>))
@@ -28,11 +30,13 @@ expression = spaces *> _expression <* eof
   identifier = fromCharArray <$> (A.some $ alphaNum <|> oneOf [ '!', '@', '#', '$', '%', '^', '&', '*', '-', '_', '+', '|', '<', '>', '/', '?' ])
 
   args = ((lambda <* spaces) `between` dot) $ sepEndBy identifier spaces1
-  
+
   variable = Variable <$> identifier
-  
+
   lambdaAbstraction e = (\ids expr -> foldr (\id body -> LambdaAbstraction id body) expr ids) <$> args <* spaces *> e
 
   application e = (\m n ls -> foldl Application (Application m n) ls) <$> e <*> (spaces1 *> e) <*> sepEndBy e spaces
-  
-  _expression = fix \e -> variable <|> lambdaAbstraction e <|> application e
+
+  factor e = parens e
+
+  _expression = fix \e -> factor e <|> lambdaAbstraction e <|> application e <|> variable
