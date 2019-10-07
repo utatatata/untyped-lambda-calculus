@@ -1,4 +1,4 @@
-module Main where
+module UntypedLambda.Core where
 
 import Prelude
 import Data.Array (filter, union, notElem)
@@ -6,8 +6,6 @@ import Data.Foldable (foldl, foldr)
 import Data.Function (on)
 import Data.Tuple (Tuple(..))
 import Data.Int (decimal, toStringAs)
-import Effect (Effect)
-import Effect.Console (log)
 
 type Identifier
   = String
@@ -143,7 +141,3 @@ standardLibs =
   , Tuple "succ" $ LambdaAbstraction "n" (LambdaAbstraction "f" (LambdaAbstraction "x" (Application (Variable "f") (Application (Application (Variable "n") (Variable "f")) (Variable "x")))))
   , Tuple "plus" $ LambdaAbstraction "m" (LambdaAbstraction "n" (LambdaAbstraction "f" (LambdaAbstraction "x" (Application (Application (Variable "m") (Variable "f")) (Application (Application (Variable "n") (Variable "f")) (Variable "x"))))))
   ]
-
-main :: Effect Unit
-main = do
-  log "🍝"
