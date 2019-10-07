@@ -1,139 +1,77 @@
 module Main where
 
 import Prelude
+import Data.Array (filter, union, notElem)
 import Data.Function (on)
 import Data.Int (decimal, toStringAs)
-import Data.List (List(..), (:), filter, union, notElem)
-import Data.Tuple (Tuple(..))
 import Effect (Effect)
 import Effect.Console (log)
-
-onM :: forall f a b c. Apply f => (b -> b -> c) -> (a -> f b) -> a -> a -> f c
-onM f g x y = f <$> g x <*> g y
-
-data Expression
-  = Identifier Identifier
-  | LambdaAbstraction LambdaAbstraction
-  | Application Application
-
-instance eqExpression :: Eq Expression where
-  eq (Identifier x) (Identifier y) = eq x y
-  eq (LambdaAbstraction x) (LambdaAbstraction y) = eq x y
-  eq (Application x) (Application y) = eq x y
-  eq _ _ = false
-
-instance showExpression :: Show Expression where
-  show (Identifier x) = "(Identifier " <> show x <> ")"
-  show (LambdaAbstraction x) = "(LambdaAbstraction " <> show x <> ")"
-  show (Application x) = "(Application " <> show x <> ")"
 
 type Identifier
   = String
 
-type LambdaAbstraction
-  = Tuple Identifier Expression
-
-type Application
-  = Tuple Expression Expression
-
-free :: Expression -> List Identifier
-free (Identifier id) = id : Nil
-
-free (LambdaAbstraction (Tuple bound expr)) = filter (_ /= bound) $ free expr
-
-free (Application (Tuple expr arg)) = (union `on` free) expr arg
-
-shadow :: Identifier -> Expression -> Expression
-shadow var expr = replace 1
-  where
-  freeVars = free expr
-
-  replace :: Int -> Expression
-  replace n =
-    let
-      shadowVar = var <> "_" <> (toStringAs decimal n)
-    in
-      if shadowVar `notElem` freeVars then
-        alphaConversion (Substitution var (Identifier shadowVar)) expr
-      else
-        replace $ n + 1
+data Expression
+  = Variable Identifier
+  | LambdaAbstraction Identifier Expression
+  | Application Expression Expression
 
 data Substitution
   = Substitution Identifier Expression
 
+instance eqExpression :: Eq Expression where
+  eq (Variable x) (Variable y) = eq x y
+  eq (LambdaAbstraction x m) (LambdaAbstraction y n) = eq x y && eq m n
+  eq (Application x a) (Application y b) = eq x y && eq a b
+  eq _ _ = false
+
+instance showExpression :: Show Expression where
+  show (Variable x) = "(Variable " <> show x <> ")"
+  show (LambdaAbstraction x m) = "(LambdaAbstraction " <> show x <> " " <> show m <> ")"
+  show (Application x a) = "(Application " <> show x <> " " <> show a <> ")"
+
+freeVariables :: Expression -> Array Identifier
+freeVariables (Variable x) = [ x ]
+
+freeVariables (LambdaAbstraction bound body) = freeVariables body # filter ((/=) bound)
+
+freeVariables (Application expr arg) = (union `on` freeVariables) expr arg
+
 alphaConversion :: Substitution -> Expression -> Expression
-alphaConversion (Substitution match replacement) (Identifier id) = if match == id then replacement else (Identifier id)
+alphaConversion (Substitution match replacement) (Variable x)
+  | match == x = replacement
 
-alphaConversion sub@(Substitution match replacement) lambda@(LambdaAbstraction (Tuple bound expr)) = if match == bound then
-  lambda
-else if bound `notElem` free replacement then
-  LambdaAbstraction (Tuple bound $ alphaConversion sub expr)
+alphaConversion _ var@(Variable _) = var
+
+alphaConversion (Substitution match _) lambda@(LambdaAbstraction bound _)
+  | match == bound = lambda
+
+alphaConversion sub@(Substitution _ replacement) (LambdaAbstraction bound body)
+  | bound `notElem` freeVariables replacement = LambdaAbstraction bound $ alphaConversion sub body
+
+alphaConversion (Substitution match replacement) lambda@(LambdaAbstraction bound body) =
+  let
+    freeVars = freeVariables replacement
+
+    shadowVar n = let var = bound <> "_" <> (toStringAs decimal n) in if var `notElem` freeVars then var else shadowVar (n + 1)
+
+    newReplacement = alphaConversion (Substitution bound (Variable $ shadowVar 0)) replacement
+  in
+    alphaConversion (Substitution match newReplacement) lambda
+
+alphaConversion sub (Application expr arg) = (Application `on` alphaConversion sub) expr arg
+
+betaReduction :: Expression -> Expression -> Expression
+betaReduction (LambdaAbstraction bound body) arg = alphaConversion (Substitution bound arg) body
+
+betaReduction expr arg = Application expr arg
+
+etaConversion :: Identifier -> Expression -> Expression
+etaConversion bound body@(Application expr (Variable var)) = if bound == var && bound `notElem` freeVariables expr then
+  expr
 else
-  LambdaAbstraction (Tuple bound $ alphaConversion (Substitution match $ shadow bound replacement) expr)
+  LambdaAbstraction bound body
 
-alphaConversion sub (Application (Tuple expr arg)) = Application $ (Tuple `on` (alphaConversion sub)) expr arg
-
-betaReduction :: Application -> Expression
-betaReduction (Tuple (LambdaAbstraction (Tuple bound expr)) arg) = alphaConversion (Substitution bound arg) expr
-
-betaReduction app = Application app
-
-etaConversion :: LambdaAbstraction -> Expression
-etaConversion lambda@(Tuple bound (Application (Tuple expr (Identifier id)))) = if bound == id && bound `notElem` free expr then expr else LambdaAbstraction lambda
-
-etaConversion lambda = LambdaAbstraction lambda
-
-data NormalForm
-  = NFIdentifier Identifier
-  | NFLambdaAbstraction Identifier NormalForm
-  | NFApplication NFApplication
-
-instance eqNormalForm :: Eq NormalForm where
-  eq (NFIdentifier x) (NFIdentifier y) = eq x y
-  eq (NFLambdaAbstraction x f) (NFLambdaAbstraction y g) = eq x y && eq f g
-  eq (NFApplication x) (NFApplication y) = eq x y
-  eq _ _ = false
-
-instance showNormalForm :: Show NormalForm where
-  show (NFIdentifier id) = "(NFIdentifier " <> show id <> ")"
-  show (NFLambdaAbstraction x f) = "(NFLambdaAbstraction " <> show x <> " " <> show f <> ")"
-  show (NFApplication x) = "(NFApplication " <> show x <> ")"
-
-data NFApplication
-  = NFIdentApp Identifier NormalForm
-  | NFAppApp NFApplication NormalForm
-
-instance eqNFApplication :: Eq NFApplication where
-  eq (NFIdentApp x f) (NFIdentApp y g) = eq x y && eq f g
-  eq (NFAppApp x f) (NFAppApp y g) = eq x y && eq f g
-  eq _ _ = false
-
-instance showNFApplication :: Show NFApplication where
-  show (NFIdentApp x f) = "(NFIdentApp " <> show x <> " " <> show f <> ")"
-  show (NFAppApp x f) = "(NFAppApp " <> show x <> " " <> show f <> ")"
-
-asExpression :: NormalForm -> Expression
-asExpression (NFIdentifier id) = Identifier id
-
-asExpression (NFLambdaAbstraction bound nf) = LambdaAbstraction $ Tuple bound $ asExpression nf
-
-asExpression (NFApplication (NFIdentApp id nf)) = Application $ Tuple (Identifier id) $ asExpression nf
-
-asExpression (NFApplication (NFAppApp nfApp nf)) = Application $ Tuple (asExpression $ NFApplication nfApp) $ asExpression nf
-
-callByName :: Expression -> NormalForm
-callByName (Identifier id) = NFIdentifier id
-
-callByName (LambdaAbstraction (Tuple bound expr)) = NFLambdaAbstraction bound $ callByName expr
-
-callByName (Application (Tuple (Identifier id) arg)) = NFApplication $ NFIdentApp id $ callByName arg
-
-callByName (Application app@(Tuple (LambdaAbstraction _) _)) = callByName $ betaReduction app
-
-callByName (Application (Tuple expr arg)) = case callByName expr of
-  NFIdentifier id -> NFApplication $ NFIdentApp id $ callByName arg
-  NFApplication nfApp -> NFApplication $ NFAppApp nfApp $ callByName arg
-  NFLambdaAbstraction bound nf -> callByName $ Application $ Tuple (LambdaAbstraction $ Tuple bound $ asExpression nf) arg
+etaConversion bound body = LambdaAbstraction bound body
 
 main :: Effect Unit
 main = do
