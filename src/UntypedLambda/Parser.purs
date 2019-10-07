@@ -8,7 +8,7 @@ import Data.Foldable (foldl, foldr)
 import Data.String.CodeUnits (fromCharArray)
 import UntypedLambda.Core (Expression(..))
 import Text.Parsing.Parser (Parser)
-import Text.Parsing.Parser.Combinators (sepEndBy, sepEndBy1, between)
+import Text.Parsing.Parser.Combinators (sepEndBy, between)
 import Text.Parsing.Parser.String (eof, oneOf, string)
 import Text.Parsing.Parser.Token (alphaNum, space)
 
@@ -26,14 +26,13 @@ expression = spaces *> _expression <* eof
   dot = string "."
 
   identifier = fromCharArray <$> (A.some $ alphaNum <|> oneOf [ '!', '@', '#', '$', '%', '^', '&', '*', '-', '_', '+', '|', '<', '>', '/', '?' ])
-  
-  variable = Variable <$> identifier
 
   args = ((lambda <* spaces) `between` dot) $ sepEndBy identifier spaces1
   
+  variable = Variable <$> identifier
+  
   lambdaAbstraction e = (\ids expr -> foldr (\id body -> LambdaAbstraction id body) expr ids) <$> args <* spaces *> e
 
-  -- application e = parens (sepEndBy1 e spaces1)
-  --   <#> \exprs -> foldl (\expr arg -> Application expr arg) 
+  application e = (\m n ls -> foldl Application (Application m n) ls) <$> e <*> (spaces1 *> e) <*> sepEndBy e spaces
   
-  _expression = fix \e -> variable <|> lambdaAbstraction e -- <|> application e
+  _expression = fix \e -> variable <|> lambdaAbstraction e <|> application e
