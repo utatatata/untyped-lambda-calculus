@@ -1,9 +1,10 @@
 module Test.Main where
 
 import Prelude
+import Data.Functor.App (App(..))
 import Effect (Effect)
 import Effect.Aff (launchAff_)
-import Main (Expression(..), Substitution(..), alphaConversion, betaReduction, etaConversion, freeVariables)
+import Main (Expression(..), Substitution(..), VApplication(..), Value(..), alphaConversion, betaReduction, callByValue, etaConversion, freeVariables, standardLibs, withEnvironment)
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
 import Test.Spec.Reporter (consoleReporter)
@@ -17,6 +18,7 @@ main = do
         testAlphaConversion
         testBetaReduction
         testEtaConversion
+        testCallByValue
 
 testFreeVariables :: Spec Unit
 testFreeVariables =
@@ -549,3 +551,25 @@ testEtaConversion =
           shouldSame "x" (LambdaAbstraction "y" (Variable "z"))
   where
   shouldSame bound body = etaConversion bound body `shouldEqual` LambdaAbstraction bound body
+
+testCallByValue :: Spec Unit
+testCallByValue =
+  describe "callByValue" do
+    it "succ zero ≡ one" do
+      eval (Application (Variable "succ") (Variable "zero")) `shouldEqual` vone
+    it "succ one ≡ two" do
+      eval (Application (Variable "succ") (Variable "one")) `shouldEqual` vtwo
+    it "plus zero zero ≡ zero" do
+      eval (Application (Application (Variable "plus") (Variable "zero")) (Variable "zero")) `shouldEqual` vzero
+    it "plus zero one ≡ one" do
+      eval (Application (Application (Variable "plus") (Variable "zero")) (Variable "one")) `shouldEqual` vone
+    it "plus one zero ≡ one" do
+      eval (Application (Application (Variable "plus") (Variable "one")) (Variable "zero")) `shouldEqual` vone
+  where
+  vzero = VLambdaAbstraction "f" (VLambdaAbstraction "x" (VVariable "x"))
+
+  vone = VLambdaAbstraction "f" (VLambdaAbstraction "x" (VApplication $ VIdentApp "f" (VVariable "x")))
+
+  vtwo = VLambdaAbstraction "f" (VLambdaAbstraction "x" (VApplication $ VIdentApp "f" (VApplication $ VIdentApp "f" (VVariable "x"))))
+
+  eval expr = callByValue $ withEnvironment standardLibs expr

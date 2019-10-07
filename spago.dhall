@@ -5,7 +5,14 @@ You can edit this file as you like.
 { name =
     "my-project"
 , dependencies =
-    [ "arrays", "console", "effect", "psci-support", "spec" ]
+    [ "arrays"
+    , "console"
+    , "effect"
+    , "foldable-traversable"
+    , "psci-support"
+    , "spec"
+    , "tuples"
+    ]
 , packages =
     ./packages.dhall
 , sources =
