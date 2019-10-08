@@ -1,5 +1,9 @@
 module UntypedLambda.Parser
   ( expression
+  , identifier
+  , spaces
+  , spaces1
+  , parens
   ) where
 
 import Prelude hiding (between)
@@ -10,28 +14,32 @@ import Data.Char.Unicode (isAlphaNum)
 import Data.Foldable (foldl, foldr)
 import Data.List (List(..), (:))
 import Data.String.CodeUnits (fromCharArray)
-import Text.Parsing.Parser (Parser)
+import Text.Parsing.Parser (Parser, ParserT)
 import Text.Parsing.Parser.Combinators (sepEndBy, between)
 import Text.Parsing.Parser.String (eof, string, satisfy)
 import Text.Parsing.Parser.Token (space)
 import UntypedLambda.Core (Expression(..))
 
+spaces :: forall m. Monad m => ParserT String m (Array Unit)
+spaces = A.many $ void space
+
+spaces1 :: forall m. Monad m => ParserT String m (Array Unit)
+spaces1 = A.some $ void space
+
+parens :: forall m a. Monad m => ParserT String m a -> ParserT String m a
+parens = between (string "(" <* spaces) (spaces *> string ")")
+
+identifier :: Parser String String
+identifier =
+  fromCharArray
+    <$> ( A.some
+          $ satisfy \chr ->
+              (isAlphaNum chr && chr /= 'λ') || chr `A.elem` [ '!', '@', '#', '$', '%', '^', '&', '*', '-', '_', '+', '|', '<', '>', '/', '?' ]
+      )
+
 expression :: Parser String Expression
 expression = spaces *> _expression <* eof
   where
-  spaces = A.many $ void space
-
-  spaces1 = A.some $ void space
-
-  parens = between (string "(" <* spaces) (spaces *> string ")")
-
-  identifier =
-    fromCharArray
-      <$> ( A.some
-            $ satisfy \chr ->
-                (isAlphaNum chr && chr /= 'λ') || chr `A.elem` [ '!', '@', '#', '$', '%', '^', '&', '*', '-', '_', '+', '|', '<', '>', '/', '?' ]
-        )
-
   -- <variable> ::= <identifier>
   variable = Variable <$> identifier
 

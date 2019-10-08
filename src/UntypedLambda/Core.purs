@@ -8,7 +8,9 @@ module UntypedLambda.Core
   , etaConversion
   , Value(..)
   , VApplication(..)
+  , asExpression
   , callByValue
+  , Environment
   , withEnvironment
   , standardLibs
   ) where
@@ -136,16 +138,19 @@ callByValue (Application expr arg) =
         vlambda@(VLambdaAbstraction _ _) -> callByValue $ (betaReduction `on` asExpression) vlambda $ callByValue arg
         VApplication vApp -> VApplication $ VAppApp vApp $ callByValue arg
 
-withEnvironment :: Array (Tuple Identifier Expression) -> Expression -> Expression
-withEnvironment libs expression =
-  let
-    names = libs # map \(Tuple name _) -> name
+type Environment
+  = Array (Tuple Identifier Expression)
 
-    values = libs # map \(Tuple _ value) -> value
+withEnvironment :: Environment -> Expression -> Expression
+withEnvironment env expression =
+  let
+    names = env # map \(Tuple name _) -> name
+
+    values = env # map \(Tuple _ value) -> value
   in
     foldl (\expr value -> Application expr value) (foldr (\name expr -> LambdaAbstraction name expr) expression names) values
 
-standardLibs :: Array (Tuple Identifier Expression)
+standardLibs :: Environment
 standardLibs =
   [ Tuple "zero" $ LambdaAbstraction "f" (LambdaAbstraction "x" (Variable "x"))
   , Tuple "one" $ LambdaAbstraction "f" (LambdaAbstraction "x" (Application (Variable "f") (Variable "x")))
