@@ -6,6 +6,7 @@ import Prelude hiding (between)
 import Control.Alt ((<|>))
 import Control.Lazy (fix)
 import Data.Array as A
+import Data.List (List(..))
 import Data.Foldable (foldl, foldr)
 import Data.String.CodeUnits (fromCharArray)
 import UntypedLambda.Core (Expression(..))
@@ -23,20 +24,38 @@ expression = spaces *> _expression <* eof
 
   parens = between (string "(" <* spaces) (string ")")
 
-  lambda = string "λ" <|> string "\\"
-
-  dot = string "."
-
   identifier = fromCharArray <$> (A.some $ alphaNum <|> oneOf [ '!', '@', '#', '$', '%', '^', '&', '*', '-', '_', '+', '|', '<', '>', '/', '?' ])
-
-  args = ((lambda <* spaces) `between` dot) $ sepEndBy identifier spaces1
 
   variable = Variable <$> identifier
 
-  lambdaAbstraction e = (\ids expr -> foldr (\id body -> LambdaAbstraction id body) expr ids) <$> args <* spaces *> e
+  -- args = ((lambda <* spaces) `between` dot) $ sepEndBy identifier spaces1
+  -- lambdaAbstraction e = parens $ (\ids expr -> foldr (\id body -> LambdaAbstraction id body) expr ids) <$> args <* spaces *> e
+  args = do
+    _ <- string "λ" <|> string "\\"
+    _ <- spaces
+    ids <- sepEndBy identifier spaces1
+    _ <- spaces
+    _ <- string "."
+    pure $ ids
+  
+  lambdaAbstraction expr = do
+    ids <- args
+    _ <- spaces
+    body <- expr
+    pure $ foldr LambdaAbstraction body ids
 
-  application e = (\m n ls -> foldl Application (Application m n) ls) <$> e <*> (spaces1 *> e) <*> sepEndBy e spaces
+  -- application e = parens $ (\m n ls -> foldl Application (Application m n) ls) <$> e <*> (spaces1 *> e) <*> sepEndBy e spaces1
+  -- application e = parens (sepEndBy e spaces1)
+  --   <#> \exprs -> foldl Application (Variable "___________") exprs
+  application expr = do
+    _ <- string "("
+    _ <- spaces
+    m <- expr
+    _ <- spaces1
+    n <- expr
+    ls <- (spaces1 *> sepEndBy expr spaces1) <|> pure Nil
+    _ <- spaces
+    _ <- string ")"
+    pure $ foldl Application (Application m n) ls
 
-  factor e = parens e
-
-  _expression = fix \e -> factor e <|> lambdaAbstraction e <|> application e <|> variable
+  _expression = fix \expr -> variable <|> lambdaAbstraction expr <|> application expr
