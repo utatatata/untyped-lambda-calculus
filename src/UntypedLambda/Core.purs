@@ -1,11 +1,24 @@
-module UntypedLambda.Core where
+module UntypedLambda.Core
+  ( Identifier
+  , Expression(..)
+  , freeVariables
+  , Substitution(..)
+  , alphaConversion
+  , betaReduction
+  , etaConversion
+  , Value(..)
+  , VApplication(..)
+  , callByValue
+  , withEnvironment
+  , standardLibs
+  ) where
 
 import Prelude
 import Data.Array (filter, union, notElem)
 import Data.Foldable (foldl, foldr)
 import Data.Function (on)
-import Data.Tuple (Tuple(..))
 import Data.Int (decimal, toStringAs)
+import Data.Tuple (Tuple(..))
 
 type Identifier
   = String
@@ -14,9 +27,6 @@ data Expression
   = Variable Identifier
   | LambdaAbstraction Identifier Expression
   | Application Expression Expression
-
-data Substitution
-  = Substitution Identifier Expression
 
 instance eqExpression :: Eq Expression where
   eq (Variable x) (Variable y) = eq x y
@@ -35,6 +45,9 @@ freeVariables (Variable x) = [ x ]
 freeVariables (LambdaAbstraction bound body) = freeVariables body # filter ((/=) bound)
 
 freeVariables (Application expr arg) = (union `on` freeVariables) expr arg
+
+data Substitution
+  = Substitution Identifier Expression
 
 alphaConversion :: Substitution -> Expression -> Expression
 alphaConversion (Substitution match replacement) (Variable x)
