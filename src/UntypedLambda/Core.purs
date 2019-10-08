@@ -124,13 +124,13 @@ callByValue (Application expr arg) =
         VApplication vApp -> VApplication $ VAppApp vApp $ callByValue arg
 
 withEnvironment :: Array (Tuple Identifier Expression) -> Expression -> Expression
-withEnvironment libs expr =
+withEnvironment libs expression =
   let
     names = libs # map \(Tuple name _) -> name
 
     values = libs # map \(Tuple _ value) -> value
   in
-    foldl (\expr value -> Application expr value) (foldr (\name expr -> LambdaAbstraction name expr) expr names) values
+    foldl (\expr value -> Application expr value) (foldr (\name expr -> LambdaAbstraction name expr) expression names) values
 
 standardLibs :: Array (Tuple Identifier Expression)
 standardLibs =
