@@ -18,10 +18,15 @@ testExpression =
       testValid "(λx.x)" $ LambdaAbstraction "x" (Variable "x")
       testValid "(  λ  x  y    z . ( x  y  z   ))" $ LambdaAbstraction "x" $ LambdaAbstraction "y" $ LambdaAbstraction "z" $ Application (Application (Variable "x") (Variable "y")) (Variable "z")
       testValid "(\\x.x)" $ LambdaAbstraction "x" (Variable "x")
+      testValid "(\\f.\\x.(f x))" $ LambdaAbstraction "f" $ LambdaAbstraction "x" $ Application (Variable "f") (Variable "x")
       testValid "(succ zero)" $ Application (Variable "succ") (Variable "zero")
       testValid "(x y z)" $ Application (Application (Variable "x") (Variable "y")) (Variable "z")
       testValid "(  succ   one   )" $ Application (Variable "succ") (Variable "one")
       testValid "(  a   b c    d   e)" $ Application (Application (Application (Application (Variable "a") (Variable "b")) (Variable "c")) (Variable "d")) (Variable "e")
+      testValid "x y z" $ Application (Application (Variable "x") (Variable "y")) (Variable "z")
+      testValid "λx.x y" $ LambdaAbstraction "x" $ Application (Variable "x") (Variable "y")
+      testValid "λn f x.f (n f x)" $ LambdaAbstraction "n" $ LambdaAbstraction "f" $ LambdaAbstraction "x" $ Application (Variable "f") $ Application (Application (Variable "n") (Variable "f")) (Variable "x")
+      testValid "λ   m  n f x  .m f ( n f x  )" $ LambdaAbstraction "m" $ LambdaAbstraction "n" $ LambdaAbstraction "f" $ LambdaAbstraction "x" $ Application (Application (Variable "m") (Variable "f")) $ Application (Application (Variable "n") (Variable "f")) (Variable "x")
   where
   testValid code result =
     it code do
