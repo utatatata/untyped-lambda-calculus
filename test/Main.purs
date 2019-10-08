@@ -12,9 +12,9 @@ main :: Effect Unit
 main = do
   launchAff_ $ runSpec [ consoleReporter ]
     $ do
-        -- testFreeVariables
-        -- testAlphaConversion
-        -- testBetaReduction
-        -- testEtaConversion
-        -- testCallByValue
+        testFreeVariables
+        testAlphaConversion
+        testBetaReduction
+        testEtaConversion
+        testCallByValue
         testExpression
