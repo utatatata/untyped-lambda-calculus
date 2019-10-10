@@ -1,6 +1,7 @@
 module UntypedLambda.Core
   ( Identifier
   , Expression(..)
+  , display
   , freeVariables
   , Substitution(..)
   , alphaConversion
@@ -20,6 +21,7 @@ import Data.Array (filter, union, notElem)
 import Data.Foldable (foldl, foldr)
 import Data.Function (on)
 import Data.Int (decimal, toStringAs)
+import Data.String (drop, joinWith)
 import Data.Tuple (Tuple(..))
 
 type Identifier
@@ -40,6 +42,30 @@ instance showExpression :: Show Expression where
   show (Variable x) = "(Variable " <> show x <> ")"
   show (LambdaAbstraction x m) = "(LambdaAbstraction " <> show x <> " " <> show m <> ")"
   show (Application x a) = "(Application " <> show x <> " " <> show a <> ")"
+
+display :: Expression -> String
+display = case _ of
+  Variable x -> x
+  LambdaAbstraction bound body@(LambdaAbstraction _ _) -> -- drop 'λ'
+    "λ" <> bound <> " " <> (drop 1 $ display body)
+  LambdaAbstraction bound body -> "λ" <> bound <> "." <> (display body)
+  Application expr arg ->
+    joinWith " "
+      [ case expr of
+          Variable var -> var
+          -- left-associative
+          lambda@(LambdaAbstraction _ _) -> paren $ display lambda
+          -- right-associative
+          app@(Application _ _) -> display app
+      , case arg of
+          Variable var -> var
+          -- left-associative
+          lambda@(LambdaAbstraction _ _) -> display lambda
+          -- right-associative
+          app@(Application _ _) -> paren $ display app
+      ]
+  where
+  paren x = joinWith x [ "(", ")" ]
 
 freeVariables :: Expression -> Array Identifier
 freeVariables (Variable x) = [ x ]
@@ -139,23 +165,55 @@ callByValue (Application expr arg) =
         VApplication vApp -> VApplication $ VAppApp vApp $ callByValue arg
 
 type Environment
-  = Array (Tuple Identifier Expression)
+  = Array (Tuple Identifier Value)
 
 withEnvironment :: Environment -> Expression -> Expression
 withEnvironment env expression =
   let
     names = env # map \(Tuple name _) -> name
 
-    values = env # map \(Tuple _ value) -> value
+    values = env # map \(Tuple _ value) -> asExpression value
   in
     foldl (\expr value -> Application expr value) (foldr (\name expr -> LambdaAbstraction name expr) expression names) values
 
 standardLibs :: Environment
 standardLibs =
-  [ Tuple "zero" $ LambdaAbstraction "f" (LambdaAbstraction "x" (Variable "x"))
-  , Tuple "one" $ LambdaAbstraction "f" (LambdaAbstraction "x" (Application (Variable "f") (Variable "x")))
-  , Tuple "two" $ LambdaAbstraction "f" (LambdaAbstraction "x" (Application (Variable "f") (Application (Variable "f") (Variable "x"))))
-  , Tuple "three" $ LambdaAbstraction "f" (LambdaAbstraction "x" (Application (Variable "f") (Application (Variable "f") (Application (Variable "f") (Variable "x")))))
-  , Tuple "succ" $ LambdaAbstraction "n" (LambdaAbstraction "f" (LambdaAbstraction "x" (Application (Variable "f") (Application (Application (Variable "n") (Variable "f")) (Variable "x")))))
-  , Tuple "plus" $ LambdaAbstraction "m" (LambdaAbstraction "n" (LambdaAbstraction "f" (LambdaAbstraction "x" (Application (Application (Variable "m") (Variable "f")) (Application (Application (Variable "n") (Variable "f")) (Variable "x"))))))
+  [ Tuple "zero" $ VLambdaAbstraction "f" $ VLambdaAbstraction "x" $ VVariable "x"
+  , Tuple "one"
+      $ VLambdaAbstraction "f"
+      $ VLambdaAbstraction "x"
+      $ VApplication
+      $ VIdentApp "f"
+      $ VVariable "x"
+  , Tuple "two"
+      $ VLambdaAbstraction "f"
+      $ VLambdaAbstraction "x"
+      $ VApplication
+      $ VAppApp (VIdentApp "f" $ VVariable "f")
+      $ VVariable "x"
+  , Tuple "three"
+      $ VLambdaAbstraction "f"
+      $ VLambdaAbstraction "x"
+      $ VApplication
+      $ VAppApp (VAppApp (VIdentApp "f" $ VVariable "f") $ VVariable "f")
+      $ VVariable "x"
+  , Tuple "succ"
+      $ VLambdaAbstraction "n"
+      $ VLambdaAbstraction "f"
+      $ VLambdaAbstraction "x"
+      $ VApplication
+      $ VIdentApp "f"
+      $ VApplication
+      $ VAppApp (VIdentApp "n" $ VVariable "f")
+      $ VVariable "x"
+  , Tuple "plus"
+      $ VLambdaAbstraction "m"
+      $ VLambdaAbstraction "n"
+      $ VLambdaAbstraction "f"
+      $ VLambdaAbstraction "x"
+      $ VApplication
+      $ VAppApp (VIdentApp "m" $ VVariable "f")
+      $ VApplication
+      $ VAppApp (VIdentApp "n" $ VVariable "f")
+      $ VVariable "x"
   ]

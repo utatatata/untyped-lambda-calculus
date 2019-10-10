@@ -1,5 +1,5 @@
 module UntypedLambda.Repl
-  ( repl
+  ( eval
   ) where
 
 import Prelude
@@ -18,7 +18,7 @@ define = do
   expr <- expression
   pure $ Tuple name expr
 
-repl :: Environment -> String -> Either ParseError (Tuple Value Environment)
-repl env str = case runParser str define of
-  Right (Tuple name expr) -> pure let value = callByValue (withEnvironment env expr) in Tuple value $ cons (Tuple name $ asExpression value) env
+eval :: Environment -> String -> Either ParseError (Tuple Value Environment)
+eval env str = case runParser str define of
+  Right (Tuple name expr) -> pure let value = callByValue (withEnvironment env expr) in Tuple value $ cons (Tuple name $ value) env
   Left _ -> runParser str expression <#> callByValue <<< (withEnvironment env) <#> Tuple `flip` env
