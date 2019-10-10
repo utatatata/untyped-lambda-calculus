@@ -5,7 +5,7 @@ module UntypedLambda
   ) where
 
 import Prelude
-import UntypedLambda.Core (Value(..), VApplication(..), Environment, withEnvironment, standardLibs)
+import UntypedLambda.Core (Value(..), VApplication(..), Environment, standardLibs)
 import UntypedLambda.Core as Core
 import UntypedLambda.Repl (eval)
 

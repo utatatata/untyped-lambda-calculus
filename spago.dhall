@@ -9,6 +9,7 @@ You can edit this file as you like.
     , "console"
     , "effect"
     , "foldable-traversable"
+    , "halogen"
     , "lists"
     , "parsing"
     , "psci-support"

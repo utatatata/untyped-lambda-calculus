@@ -46,8 +46,7 @@ instance showExpression :: Show Expression where
 display :: Expression -> String
 display = case _ of
   Variable x -> x
-  LambdaAbstraction bound body@(LambdaAbstraction _ _) -> -- drop 'λ'
-    "λ" <> bound <> " " <> (drop 1 $ display body)
+  LambdaAbstraction bound body@(LambdaAbstraction _ _) ->  -- drop 'λ' "λ" <> bound <> " " <> (drop 1 $ display body)
   LambdaAbstraction bound body -> "λ" <> bound <> "." <> (display body)
   Application expr arg ->
     joinWith " "
