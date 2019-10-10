@@ -8,7 +8,7 @@ import Data.Either (Either(..))
 import Data.Tuple (Tuple(..))
 import Text.Parsing.Parser (ParseError, Parser, runParser)
 import Text.Parsing.Parser.String (string)
-import UntypedLambda.Core (Identifier, Expression, Value, asExpression, callByValue, Environment, withEnvironment)
+import UntypedLambda.Core (Identifier, Expression, Value, callByValue, Environment, withEnvironment)
 import UntypedLambda.Parser (expression, identifier, spaces)
 
 define :: Parser String (Tuple Identifier Expression)

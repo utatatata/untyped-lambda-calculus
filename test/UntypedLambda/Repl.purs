@@ -7,7 +7,7 @@ import Data.Array (cons)
 import Data.Tuple (Tuple(..))
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
-import UntypedLambda.Core (Expression(..), VApplication(..), Value(..), standardLibs)
+import UntypedLambda.Core (VApplication(..), Value(..), standardLibs)
 import UntypedLambda.Repl (eval)
 
 testRepl :: Spec Unit
