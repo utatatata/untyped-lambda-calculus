@@ -47,7 +47,7 @@ main =
   initialState _ =
     { input: ""
     , history: []
-    , env: []
+    , env: standardLibs
     }
 
   handleAction = case _ of
@@ -57,7 +57,7 @@ main =
     Input input -> H.modify_ _ { input = input }
     Eval -> do
       state <- H.get
-      case eval standardLibs state.input of
+      case eval state.env state.input of
         Left err -> do
           H.modify_
             _
@@ -74,21 +74,21 @@ main =
 
   render state =
     HH.main_
-      [ HH.h1 [] [ HH.text "REPL for the untyped lambda calculus" ]
+      [ HH.h1_ [ HH.text "REPL for the untyped lambda calculus" ]
       , HH.section_
-          [ HH.h2 [] [ HH.text "Welcom to the REPL for the untyped lambda calculus." ]
-          , HH.div [] $ state.history
+          [ HH.h2_ [ HH.text "Welcom to the REPL for the untyped lambda calculus." ]
+          , HH.div_ $ state.history
               # map \({ input, output }) ->
-                  HH.div []
-                    [ HH.div []
-                        [ HH.span [] [ HH.text prompt ]
+                  HH.div_
+                    [ HH.div_
+                        [ HH.span_ [ HH.text prompt ]
                         , HH.input [ HP.disabled true, HP.value input ]
                         ]
-                    , HH.div [] [ HH.text output ]
+                    , HH.div_ [ HH.text output ]
                     ]
           , HH.form [ HE.onSubmit \e -> Just $ PreventDefault e Eval ]
-              [ HH.span [] [ HH.text prompt ]
-              , HH.input [ HP.value state.input, HE.onValueInput $ Just <<< Input ]
+              [ HH.span_ [ HH.text prompt ]
+              , HH.input [ HP.value state.input, HE.onValueInput $ Just <<< Input, HP.autofocus true ]
               ]
           ]
       ]
