@@ -7,6 +7,7 @@ module Test.UntypedLambda.Core
   ) where
 
 import Prelude
+import UntypedLambda.Core as Core
 import UntypedLambda.Core (Expression(..), Substitution(..), VApplication(..), Value(..), alphaConversion, betaReduction, callByValue, etaConversion, freeVariables, standardLibs, withEnvironment)
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
@@ -561,6 +562,14 @@ testCallByValue =
         eval (Application (Application (Variable "plus") (Variable "zero")) (Variable "one")) `shouldEqual` vone
       it "plus one zero ≡ one" do
         eval (Application (Application (Variable "plus") (Variable "one")) (Variable "zero")) `shouldEqual` vone
+      it "pred zero ≡ zero" do
+        eval (Application (Variable "pred") $ Variable "zero") `shouldEqual` vzero
+      it "pred one ≡ zero" do
+        eval (Application (Variable "pred") $ Variable "one") `shouldEqual` vzero
+      it "pred two ≡ one" do
+        eval (Application (Variable "pred") $ Variable "two") `shouldEqual` vone
+      it "sub zero zero ≡ zero" do
+        eval (Application (Application (Variable "sub") $ Variable "zero") $ Variable "zero") `shouldEqual` vzero
   where
   vzero = VLambdaAbstraction "f" (VLambdaAbstraction "x" (VVariable "x"))
 

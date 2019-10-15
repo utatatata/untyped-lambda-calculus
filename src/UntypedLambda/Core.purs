@@ -59,8 +59,9 @@ display = case _ of
           app@(Application _ _) -> display app
       , case arg of
           Variable var -> var
-          -- left-associative
-          lambda@(LambdaAbstraction _ _) -> display lambda
+          -- left-associative, but it is unable to determin whether "m" in "l m n" is enclosed in parentheses or not in a LL(1) parser.
+          -- It requires a LL(2) parser so "m" in "l m n" is always enclosed in parentheses.
+          lambda@(LambdaAbstraction _ _) -> paren $ display lambda
           -- right-associative
           app@(Application _ _) -> paren $ display app
       ]
@@ -189,13 +190,19 @@ standardLibs =
       $ VLambdaAbstraction "f"
       $ VLambdaAbstraction "x"
       $ VApplication
-      $ VAppApp (VIdentApp "f" $ VVariable "f")
+      $ VIdentApp "f"
+      $ VApplication
+      $ VIdentApp "f"
       $ VVariable "x"
   , Tuple "three"
       $ VLambdaAbstraction "f"
       $ VLambdaAbstraction "x"
       $ VApplication
-      $ VAppApp (VAppApp (VIdentApp "f" $ VVariable "f") $ VVariable "f")
+      $ VIdentApp "f"
+      $ VApplication
+      $ VIdentApp "f"
+      $ VApplication
+      $ VIdentApp "f"
       $ VVariable "x"
   , Tuple "succ"
       $ VLambdaAbstraction "n"
@@ -216,4 +223,68 @@ standardLibs =
       $ VApplication
       $ VAppApp (VIdentApp "n" $ VVariable "f")
       $ VVariable "x"
+  , Tuple "mul"
+      $ VLambdaAbstraction "m"
+      $ VLambdaAbstraction "n"
+      $ VLambdaAbstraction "f"
+      $ VApplication
+      $ VIdentApp "m"
+      $ VApplication
+      $ VIdentApp "f"
+      $ VVariable "n"
+  , Tuple "pow"
+      $ VLambdaAbstraction "b"
+      $ VLambdaAbstraction "e"
+      $ VApplication
+      $ VIdentApp "e"
+      $ VVariable "b"
+  , Tuple "pred"
+      $ VLambdaAbstraction "n"
+      $ VLambdaAbstraction "f"
+      $ VLambdaAbstraction "x"
+      $ VApplication
+      $ VAppApp
+          ( VAppApp
+              ( VIdentApp "n"
+                  $ VLambdaAbstraction "g"
+                  $ VLambdaAbstraction "h"
+                  $ VApplication
+                  $ VIdentApp "h"
+                  $ VApplication
+                  $ VIdentApp "g"
+                  $ VVariable "f"
+              )
+              $ VLambdaAbstraction "u"
+              $ VVariable "x"
+          )
+      $ VLambdaAbstraction "u"
+      $ VVariable "u"
+  , Tuple "sub"
+      $ VLambdaAbstraction "m"
+      $ VLambdaAbstraction "n"
+      $ VApplication
+      $ VAppApp
+          ( VIdentApp "n"
+              $ VLambdaAbstraction "l"
+              $ VLambdaAbstraction "f"
+              $ VLambdaAbstraction "x"
+              $ VApplication
+              $ VAppApp
+                  ( VAppApp
+                      ( VIdentApp "l"
+                          $ VLambdaAbstraction "g"
+                          $ VLambdaAbstraction "h"
+                          $ VApplication
+                          $ VIdentApp "h"
+                          $ VApplication
+                          $ VIdentApp "g"
+                          $ VVariable "f"
+                      )
+                      $ VLambdaAbstraction "u"
+                      $ VVariable "x"
+                  )
+              $ VLambdaAbstraction "u"
+              $ VVariable "u"
+          )
+      $ VVariable "m"
   ]
