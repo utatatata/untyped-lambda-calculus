@@ -1,22 +1,27 @@
 module Editor where
 
 import Prelude hiding (div)
+import DOM.HTML.Indexed.InputType (InputType(..))
 import Data.Array (snoc)
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
 import Data.Tuple (Tuple(..))
 import Effect (Effect)
-import Web.Event.Event (Event)
-import Web.Event.Event as WE
 import Halogen as H
-import Halogen (mkComponent, mkEval, defaultEval)
-import Halogen.Aff (awaitBody, runHalogenAff)
+import Halogen.Aff as HA
 import Halogen.HTML (ClassName(..))
 import Halogen.HTML as HH
-import Halogen.HTML.Properties as HP
 import Halogen.HTML.Events as HE
-import Halogen.VDom.Driver (runUI)
+import Halogen.HTML.Properties as HP
+import Halogen.VDom.Driver as HD
 import UntypedLambda (Environment, eval, display, standardLibs)
+import Web.DOM.NonElementParentNode (getElementById)
+import Web.Event.Event (Event)
+import Web.Event.Event as WEvent
+import Web.HTML as WHtml
+import Web.HTML.Window as WWin
+import Web.HTML.HTMLDocument as WDoc
+import Web.HTML.HTMLElement as WElem
 
 type State
   = { input :: String
@@ -26,18 +31,19 @@ type State
 
 data Action
   = PreventDefault Event Action
+  | FocusById String
   | Input String
   | Eval
 
 main :: Effect Unit
 main =
-  runHalogenAff do
-    body <- awaitBody
-    runUI
-      ( mkComponent
+  HA.runHalogenAff do
+    body <- HA.awaitBody
+    HD.runUI
+      ( H.mkComponent
           { initialState
           , render
-          , eval: mkEval $ defaultEval { handleAction = handleAction }
+          , eval: H.mkEval $ H.defaultEval { handleAction = handleAction }
           }
       )
       unit
@@ -52,18 +58,22 @@ main =
 
   handleAction = case _ of
     PreventDefault event action -> do
-      H.liftEffect $ WE.preventDefault event
+      H.liftEffect $ WEvent.preventDefault event
       handleAction action
+    FocusById id -> do
+      H.liftEffect
+        ( do
+            win <- WHtml.window
+            doc <- WWin.document win
+            maybeElem <- getElementById id $ WDoc.toNonElementParentNode doc
+            case maybeElem >>= WElem.fromElement of
+              Nothing -> pure unit
+              Just elem -> WElem.focus elem
+        )
     Input input -> H.modify_ _ { input = input }
     Eval -> do
       state <- H.get
       case eval state.env state.input of
-        Left err -> do
-          H.modify_
-            _
-              { input = ""
-              , history = state.history `snoc` { input: state.input, output: show err }
-              }
         Right (Tuple value env) -> do
           H.modify_
             _
@@ -71,24 +81,64 @@ main =
               , history = state.history `snoc` { input: state.input, output: display value }
               , env = env
               }
+        Left err -> do
+          H.modify_
+            _
+              { input = ""
+              , history = state.history `snoc` { input: state.input, output: show err }
+              }
 
   render state =
-    HH.main_
-      [ HH.h1_ [ HH.text "REPL for the untyped lambda calculus" ]
-      , HH.section_
-          [ HH.h2_ [ HH.text "Welcom to the REPL for the untyped lambda calculus." ]
-          , HH.div_ $ state.history
-              # map \({ input, output }) ->
-                  HH.div_
-                    [ HH.div_
-                        [ HH.span_ [ HH.text prompt ]
-                        , HH.input [ HP.disabled true, HP.value input ]
+    HH.div_
+      [ HH.header [ HP.classes [ ClassName "flex", ClassName "justify-between", ClassName "my-4" ] ]
+          [ HH.h1 [ HP.classes [ ClassName "mx-6", ClassName "text-4xl" ] ]
+              [ HH.span [ HP.class_ $ ClassName "align-middle" ] [ HH.text "λ" ]
+              ]
+          , HH.nav [ HP.classes [ ClassName "mx-2" ] ]
+              [ HH.ul [ HP.classes [ ClassName "flex justify-end" ] ]
+                  [ HH.li_ [ HH.a [ HP.target "_blank", HP.href "https://github.com/utatatata/untyped-lambda-calculus" ] [ HH.text "GitHub" ] ]
+                  ]
+              ]
+          ]
+      , HH.main [ HP.classes [ ClassName "container", ClassName "w-auto", ClassName "mx-4" ] ]
+          [ HH.section [ HP.classes [] ]
+              [ HH.h2_ [ HH.text "REPL" ]
+              , HH.div_ $ state.history
+                  # map \({ input, output }) ->
+                      HH.div_
+                        [ HH.div_
+                            [ HH.span_ [ HH.text prompt ]
+                            , HH.input
+                                [ HP.classes [ ClassName "appearance-none", ClassName "bg-gray-800", ClassName "w-11/12" ]
+                                , HP.disabled true
+                                , HP.value input
+                                ]
+                            ]
+                        , HH.div_ [ HH.text output ]
                         ]
-                    , HH.div_ [ HH.text output ]
-                    ]
-          , HH.form [ HE.onSubmit \e -> Just $ PreventDefault e Eval ]
-              [ HH.span_ [ HH.text prompt ]
-              , HH.input [ HP.value state.input, HE.onValueInput $ Just <<< Input, HP.autofocus true ]
+              , HH.form [ HE.onSubmit \e -> Just $ PreventDefault e Eval ]
+                  [ HH.span [ HP.classes [ ClassName "mr-2" ] ] [ HH.text prompt ]
+                  , HH.span [ HP.classes [ ClassName "w-11/12", ClassName "relative" ] ]
+                      [ HH.input
+                          [ HP.classes
+                              [ ClassName "appearance-none"
+                              , ClassName "bg-gray-800"
+                              , ClassName "focus:outline-none"
+                              , ClassName "text-gray-800"
+                              ]
+                          , HP.id_ "repl-input"
+                          , HP.type_ InputText
+                          , HP.value state.input
+                          , HE.onValueInput $ Just <<< Input
+                          ]
+                      , HH.span
+                          [ HP.classes [ ClassName "break-all", ClassName "absolute", ClassName "left-0" ]
+                          , HP.spellcheck false
+                          , HE.onClick $ const $ Just $ FocusById "repl-input"
+                          ]
+                          [ HH.text state.input ]
+                      ]
+                  ]
               ]
           ]
       ]
