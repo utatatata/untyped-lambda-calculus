@@ -20949,6 +20949,7 @@ var PS = {};
   var div_ = div([  ]);  
   var a = element("a");
   exports["a"] = a;
+  exports["div"] = div;
   exports["div_"] = div_;
   exports["form"] = form;
   exports["h1"] = h1;
@@ -21135,14 +21136,6 @@ var PS = {};
           return $14($15($16($17)));
       };
   })();
-  var class_ = (function () {
-      var $18 = prop(Halogen_HTML_Core.isPropString)("className");
-      var $19 = Data_Newtype.unwrap(Halogen_HTML_Core.newtypeClassName);
-      return function ($20) {
-          return $18($19($20));
-      };
-  })();
-  exports["class_"] = class_;
   exports["classes"] = classes;
   exports["href"] = href;
   exports["id_"] = id_;
@@ -23827,7 +23820,7 @@ var PS = {};
   })();
   var main = (function () {
       var render = function (state) {
-          return Halogen_HTML_Elements.div_([ Halogen_HTML_Elements.header([ Halogen_HTML_Properties.classes([ "flex", "justify-between", "my-4" ]) ])([ Halogen_HTML_Elements.h1([ Halogen_HTML_Properties.classes([ "mx-6", "text-4xl" ]) ])([ Halogen_HTML_Elements.span([ Halogen_HTML_Properties.class_("align-middle") ])([ Halogen_HTML_Core.text("\u03bb") ]) ]), Halogen_HTML_Elements.nav([ Halogen_HTML_Properties.classes([ "mx-2" ]) ])([ Halogen_HTML_Elements.ul([ Halogen_HTML_Properties.classes([ "flex justify-end" ]) ])([ Halogen_HTML_Elements.li_([ Halogen_HTML_Elements.a([ Halogen_HTML_Properties.target("_blank"), Halogen_HTML_Properties.href("https://github.com/utatatata/untyped-lambda-calculus") ])([ Halogen_HTML_Core.text("GitHub") ]) ]) ]) ]) ]), Halogen_HTML_Elements.main([ Halogen_HTML_Properties.classes([ "container", "w-auto", "mx-4" ]) ])([ Halogen_HTML_Elements.section([ Halogen_HTML_Properties.classes([  ]) ])([ Halogen_HTML_Elements.h2_([ Halogen_HTML_Core.text("REPL") ]), Halogen_HTML_Elements.div_(Data_Functor.map(Data_Functor.functorArray)(function (v) {
+          return Halogen_HTML_Elements.div_([ Halogen_HTML_Elements.header([ Halogen_HTML_Properties.classes([ "flex", "justify-between", "my-4" ]) ])([ Halogen_HTML_Elements.h1([ Halogen_HTML_Properties.classes([ "mx-6", "text-3xl" ]) ])([ Halogen_HTML_Elements.div([ Halogen_HTML_Properties.classes([ "w-12", "h-12", "rounded-full", "bg-indigo-800", "align-middle", "text-center", "font-black" ]) ])([ Halogen_HTML_Core.text("\u03bb") ]) ]), Halogen_HTML_Elements.nav([ Halogen_HTML_Properties.classes([ "mx-2" ]) ])([ Halogen_HTML_Elements.ul([ Halogen_HTML_Properties.classes([ "flex justify-end" ]) ])([ Halogen_HTML_Elements.li_([ Halogen_HTML_Elements.a([ Halogen_HTML_Properties.target("_blank"), Halogen_HTML_Properties.href("https://github.com/utatatata/untyped-lambda-calculus") ])([ Halogen_HTML_Core.text("GitHub") ]) ]) ]) ]) ]), Halogen_HTML_Elements.main([ Halogen_HTML_Properties.classes([ "container", "w-auto", "mx-4" ]) ])([ Halogen_HTML_Elements.section([ Halogen_HTML_Properties.classes([  ]) ])([ Halogen_HTML_Elements.h2_([ Halogen_HTML_Core.text("REPL") ]), Halogen_HTML_Elements.div_(Data_Functor.map(Data_Functor.functorArray)(function (v) {
               return Halogen_HTML_Elements.div_([ Halogen_HTML_Elements.div_([ Halogen_HTML_Elements.span_([ Halogen_HTML_Core.text("> ") ]), Halogen_HTML_Elements.input([ Halogen_HTML_Properties.classes([ "appearance-none", "bg-gray-800", "w-11/12" ]), Halogen_HTML_Properties.disabled(true), Halogen_HTML_Properties.value(v.input) ]) ]), Halogen_HTML_Elements.div_([ Halogen_HTML_Core.text(v.output) ]) ]);
           })(state.history)), Halogen_HTML_Elements.form([ Halogen_HTML_Events.onSubmit(function (e) {
               return Data_Maybe.Just.create(new PreventDefault(e, Eval.value));
