@@ -111,43 +111,50 @@ main =
                   ]
               ]
           ]
-      , HH.main [ HP.classes [ ClassName "container", ClassName "w-auto", ClassName "mx-4" ] ]
-          [ HH.section [ HP.classes [] ]
+      , HH.main [ HP.classes [ ClassName "mx-4", ClassName "w-auto" ] ]
+          [ HH.section_
               [ HH.h2_ [ HH.text "REPL" ]
               , HH.div_ $ state.history
                   # map \({ input, output }) ->
                       HH.div_
-                        [ HH.div_
-                            [ HH.span_ [ HH.text prompt ]
-                            , HH.input
-                                [ HP.classes [ ClassName "appearance-none", ClassName "bg-gray-800", ClassName "w-11/12" ]
-                                , HP.disabled true
-                                , HP.value input
+                        [ HH.div [ HP.class_ $ ClassName "flex" ]
+                            [ HH.div [ HP.classes [ ClassName "flex", ClassName "justify-end" ] ]
+                                [ HH.span [ HP.class_ $ ClassName "mr-1" ] [ HH.text prompt ] ]
+                            , HH.div [ HP.class_ $ ClassName "w-full" ]
+                                [ HH.input
+                                    [ HP.classes [ ClassName "appearance-none", ClassName "bg-gray-800", ClassName "w-full" ]
+                                    , HP.disabled true
+                                    , HP.value input
+                                    ]
                                 ]
                             ]
                         , HH.div_ [ HH.text output ]
                         ]
-              , HH.form [ HE.onSubmit \e -> Just $ PreventDefault e Eval ]
-                  [ HH.span [ HP.classes [ ClassName "mr-2" ] ] [ HH.text prompt ]
-                  , HH.span [ HP.classes [ ClassName "w-11/12", ClassName "relative" ] ]
-                      [ HH.input
-                          [ HP.classes
-                              [ ClassName "appearance-none"
-                              , ClassName "bg-gray-800"
-                              , ClassName "focus:outline-none"
-                              , ClassName "text-gray-800"
+              , HH.form [ HP.class_ $ ClassName "flex", HE.onSubmit \e -> Just $ PreventDefault e Eval ]
+                  [ HH.div [ HP.classes [ ClassName "flex", ClassName "justify-end" ] ]
+                      [ HH.span [ HP.class_ $ ClassName "mr-1" ] [ HH.text prompt ] ]
+                  , HH.div [ HP.class_ $ ClassName "w-full" ]
+                      [ HH.span [ HP.classes [ ClassName "relative" ] ]
+                          [ HH.input
+                              [ HP.classes
+                                  [ ClassName "w-full"
+                                  , ClassName "appearance-none"
+                                  , ClassName "bg-gray-800"
+                                  , ClassName "focus:outline-none"
+                                  , ClassName "text-gray-800"
+                                  ]
+                              , HP.id_ "repl-input"
+                              , HP.type_ InputText
+                              , HP.value state.input
+                              , HE.onValueInput $ Just <<< Input
                               ]
-                          , HP.id_ "repl-input"
-                          , HP.type_ InputText
-                          , HP.value state.input
-                          , HE.onValueInput $ Just <<< Input
+                          , HH.span
+                              [ HP.classes [ ClassName "break-all", ClassName "absolute", ClassName "left-0" ]
+                              , HP.spellcheck false
+                              , HE.onClick $ const $ Just $ FocusById "repl-input"
+                              ]
+                              [ HH.text state.input ]
                           ]
-                      , HH.span
-                          [ HP.classes [ ClassName "break-all", ClassName "absolute", ClassName "left-0" ]
-                          , HP.spellcheck false
-                          , HE.onClick $ const $ Just $ FocusById "repl-input"
-                          ]
-                          [ HH.text state.input ]
                       ]
                   ]
               ]
