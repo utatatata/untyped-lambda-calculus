@@ -91,8 +91,19 @@ main =
   render state =
     HH.div_
       [ HH.header [ HP.classes [ ClassName "flex", ClassName "justify-between", ClassName "my-4" ] ]
-          [ HH.h1 [ HP.classes [ ClassName "mx-6", ClassName "text-4xl" ] ]
-              [ HH.span [ HP.class_ $ ClassName "align-middle" ] [ HH.text "λ" ]
+          [ HH.h1 [ HP.classes [ ClassName "mx-6", ClassName "text-3xl" ] ]
+              [ HH.div
+                  [ HP.classes
+                      [ ClassName "w-12"
+                      , ClassName "h-12"
+                      , ClassName "rounded-full"
+                      , ClassName "bg-indigo-800"
+                      , ClassName "align-middle"
+                      , ClassName "text-center"
+                      , ClassName "font-black"
+                      ]
+                  ]
+                  [ HH.text "λ" ]
               ]
           , HH.nav [ HP.classes [ ClassName "mx-2" ] ]
               [ HH.ul [ HP.classes [ ClassName "flex justify-end" ] ]
