@@ -1,13 +1,13 @@
 module Editor where
 
 import Prelude hiding (div)
-import CSS (left) as CSS
-import CSS.Size (rem) as CSS
-import Data.Array ((:), index, mapWithIndex, uncons)
+import CSS as C
+import CSS.Size as CSize
+import Data.Array (index, mapWithIndex, uncons, (:))
 import Data.Either (Either(..))
 import Data.Int (toNumber)
 import Data.Maybe (Maybe(..))
-import Data.String (length, take, drop)
+import Data.String as S
 import Data.String.CodeUnits (singleton, toCharArray, splitAt)
 import Data.Tuple (Tuple(..))
 import Effect (Effect)
@@ -15,7 +15,7 @@ import Halogen as H
 import Halogen.Aff as HA
 import Halogen.HTML (ClassName(..))
 import Halogen.HTML as HH
-import Halogen.HTML.CSS as HCSS
+import Halogen.HTML.CSS as HC
 import Halogen.HTML.Core as HHCore
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
@@ -35,7 +35,7 @@ import Web.UIEvent.MouseEvent as WEventMouse
 type State
   = { input :: String
     , inputMode :: InputMode
-    , cursorPos :: Int
+    , cursorPos :: CursorPos
     , history :: Array { input :: String, output :: String }
     , env :: Environment
     }
@@ -43,6 +43,12 @@ type State
 data InputMode
   = Inputting
   | SelectingHistory Int
+
+type CursorPos =
+    { col :: Int
+    , x :: Number
+    , y :: Number
+    }
 
 data Action
   = Composition Action Action
@@ -78,7 +84,7 @@ main =
   initialState _ =
     { input: ""
     , inputMode: Inputting
-    , cursorPos: 0
+    , cursorPos: { col: 0, x: 0.0, y: 0.0 }
     , history: []
     , env: standardLibs
     }
@@ -114,27 +120,48 @@ main =
             { history } <- H.get
             case history `index` n of
               Nothing -> pure unit
-              Just { input, output: _ } -> H.modify_ _ { inputMode = SelectingHistory n, input = input, cursorPos = length input }
+              Just { input, output: _ } ->
+                H.modify_
+                  _
+                    { inputMode = SelectingHistory n
+                    , input = input
+                    , cursorPos = { col: S.length input, x: 0.0, y: 0.0 }
+                    }
       )
     HistoryDown -> do
       { inputMode } <- H.get
       case inputMode of
         Inputting -> pure unit
-        SelectingHistory 0 -> H.modify_ _ { inputMode = Inputting, input = "", cursorPos = 0 }
+        SelectingHistory 0 ->
+          H.modify_
+            _
+              { inputMode = Inputting
+              , input = ""
+              , cursorPos = { col: 0, x: 0.0, y: 0.0 }
+              }
         SelectingHistory n -> do
           { history } <- H.get
           case history `index` (n - 1) of
             Nothing -> pure unit
-            Just { input, output: _ } -> H.modify_ _ { inputMode = SelectingHistory $ n - 1, input = input, cursorPos = length input }
+            Just { input, output: _ } ->
+              H.modify_
+                _
+                  { inputMode = SelectingHistory $ n - 1
+                  , input = input
+                  , cursorPos = { col: S.length input, x: 0.0, y: 0.0 }
+                  }
     MoveCursor n -> do
-      len <- length <<< (_.input) <$> H.get
-      H.modify_ _ { cursorPos = max 0 $ min len n }
+      pure unit
+      -- len <- S.length <<< (_.input) <$> H.get
+      -- H.modify_ _ { cursorPos = max 0 $ min len n }
     MoveCursorLeft -> do
-      { cursorPos } <- H.get
-      handleAction $ MoveCursor $ cursorPos - 1
+      pure unit
+      -- { cursorPos } <- H.get
+      -- handleAction $ MoveCursor $ cursorPos - 1
     MoveCursorRight -> do
-      { cursorPos } <- H.get
-      handleAction $ MoveCursor $ cursorPos + 1
+      pure unit
+      -- { cursorPos } <- H.get
+      -- handleAction $ MoveCursor $ cursorPos + 1
     KeyDown e -> do
       case WEventKey.key e of
         "ArrowUp" -> handleAction HistoryUp
@@ -150,16 +177,24 @@ main =
     Insert c -> do
       { cursorPos, input } <- H.get
       ( let
-          { before, after } = splitAt cursorPos input
+          { before, after } = splitAt cursorPos.col input
         in
-          H.modify_ _ { input = before <> (singleton c) <> after, cursorPos = cursorPos + 1 }
+          H.modify_ _ { input = before <> (singleton c) <> after, cursorPos = { col: cursorPos.col + 1, x: 0.0, y: 0.0 } }
       )
     Backspace -> do
       { cursorPos, input } <- H.get
-      H.modify_ _ { input = take (cursorPos - 1) input <> drop cursorPos input, cursorPos = max 0 (cursorPos - 1) }
+      H.modify_
+        _
+          { input = S.take (cursorPos.col - 1) input <> S.drop cursorPos.col input
+          , cursorPos = { col: max 0 (cursorPos.col - 1), x: 0.0, y: 0.0 }
+          }
     Delete -> do
       { cursorPos, input } <- H.get
-      H.modify_ _ { input = take cursorPos input <> drop (cursorPos + 1) input }
+      H.modify_
+        _
+          { input = S.take cursorPos.col input <> S.drop (cursorPos.col + 1) input
+          , cursorPos = { col: cursorPos.col, x: 0.0, y: 0.0 }
+          }
     Eval -> do
       state <- H.modify _ { inputMode = Inputting }
       case eval state.env state.input of
@@ -168,7 +203,7 @@ main =
             _
               { input = ""
               , inputMode = Inputting
-              , cursorPos = 0
+              , cursorPos = { col: 0, x: 0.0, y: 0.0 }
               , history = { input: state.input, output: display value } : state.history
               , env = env
               }
@@ -177,7 +212,7 @@ main =
             _
               { input = ""
               , inputMode = Inputting
-              , cursorPos = 0
+              , cursorPos = { col: 0, x: 0.0, y: 0.0 }
               , history = { input: state.input, output: show err } : state.history
               }
 
@@ -213,9 +248,9 @@ main =
                         [ HH.div [ HP.class_ $ ClassName "flex" ]
                             [ HH.div [ HP.classes [ ClassName "flex", ClassName "justify-end" ] ]
                                 [ HH.span [ HP.class_ $ ClassName "mr-1" ] [ HH.text prompt ] ]
-                            , HH.div [ HP.class_ $ ClassName "w-full" ]
+                            , HH.div [ HP.classes [ ClassName "w-full", ClassName "bg-gray-800" ] ]
                                 [ HH.span
-                                    [ HP.classes [ ClassName "break-all", ClassName "bg-gray-800", ClassName "w-full" ]
+                                    [ HP.classes [ ClassName "break-all" ]
                                     ]
                                     [ HH.text input ]
                                 ]
@@ -229,11 +264,11 @@ main =
                       [ HP.classes [ ClassName "select-none", ClassName "relative", ClassName "w-full", ClassName "bg-gray-800" ]
                       , HP.prop (HHCore.PropName "setStyle") "left: -0.25rem;"
                       , HE.onKeyDown $ Just <<< KeyDown
-                      , HE.onClick $ const $ Just $ Composition (FocusById hiddenReplInputId) (MoveCursor $ length state.input)
+                      , HE.onClick $ const $ Just $ Composition (FocusById hiddenReplInputId) (MoveCursor $ S.length state.input)
                       ]
                       [ HH.div
                           [ HP.classes [ ClassName "pointer-events-none", ClassName "absolute" ]
-                          , HCSS.style do CSS.left $ CSS.rem $ -0.25 + 0.5 * (toNumber state.cursorPos)
+                          , HC.style do C.left $ CSize.rem $ -0.25 + 0.5 * (toNumber state.cursorPos.col)
                           ]
                           [ HH.span [] [ HH.text "|" ] ]
                       , HH.div
@@ -252,13 +287,17 @@ main =
                                   ]
                               ]
                           ]
-                      , HH.div [ HP.classes [ ClassName "flex" ] ] $ toCharArray state.input
-                          # mapWithIndex \i c ->
-                              HH.span
-                                [ HP.class_ $ ClassName "w-2"
-                                , HE.onClick \e -> Just $ Composition (FocusById hiddenReplInputId) (StopPropagation (WEventMouse.toEvent e) $ MoveCursor $ i + 1)
-                                ]
-                                [ HH.text $ singleton c ]
+                      , HH.div [ HP.classes [ ClassName "flex", ClassName "flex-wrap" ] ] $
+                          if not $ S.null state.input then
+                            toCharArray state.input
+                              # mapWithIndex (\i c ->
+                                  HH.span
+                                    [ HP.class_ $ ClassName "w-2"
+                                    , HE.onClick \e -> Just $ Composition (FocusById hiddenReplInputId) (StopPropagation (WEventMouse.toEvent e) $ MoveCursor $ i + 1)
+                                    ]
+                                    [ HH.text $ singleton c ])
+                          else
+                            []
                       ]
                   ]
               ]
