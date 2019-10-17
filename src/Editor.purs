@@ -187,15 +187,11 @@ main =
               Just { left, top } -> H.modify_ _ { cursorPos = Just { col: col, left: left, top: top } }
       )
     MoveCursorLeft -> do
-      -- { cursorPos: { col } } <- H.get
-      -- handleAction $ MoveCursor $ col - 1
       { cursorPos } <- H.get
       case cursorPos of
         Nothing -> pure unit
         Just { col, left: _, top: _ } -> handleAction $ MoveCursor $ col - 1
     MoveCursorRight -> do
-      -- { cursorPos: { col } } <- H.get
-      -- handleAction $ MoveCursor $ col + 1
       { cursorPos } <- H.get
       case cursorPos of
         Nothing -> pure unit
@@ -213,7 +209,6 @@ main =
           Just { head: c, tail: [] } -> handleAction $ Insert c
           _ -> pure unit
     Insert c -> do
-      -- { cursorPos: { col }, input } <- H.get
       { cursorPos, input } <- H.get
       case cursorPos of
         Nothing -> pure unit
@@ -226,7 +221,6 @@ main =
                 handleAction $ MoveCursor $ col + 1
           )
     Backspace -> do
-      -- { cursorPos: { col }, input } <- H.get
       { cursorPos, input } <- H.get
       case cursorPos of
         Nothing -> pure unit
@@ -234,7 +228,6 @@ main =
           H.modify_ _ { input = S.take (col - 1) input <> S.drop col input, inputMode = Inputting }
           handleAction $ MoveCursor $ col - 1
     Delete -> do
-      -- { cursorPos: { col }, input } <- H.get
       { cursorPos, input } <- H.get
       case cursorPos of
         Nothing -> pure unit
@@ -322,13 +315,6 @@ main =
                                     C.marginLeft $ CSize.rem (-0.2)
                                 ]
                           )
-                          -- [ HP.classes [ ClassName "pointer-events-none", ClassName "absolute" ]
-                          -- , HC.style do
-                          --     C.left $ CSize.px state.cursorPos.left
-                          --     C.top $ CSize.px state.cursorPos.top
-                          --     -- offset
-                          --     C.marginLeft $ CSize.rem (-0.2)
-                          -- ]
                           [ HH.span [] [ HH.text "|" ] ]
                       , HH.div
                           []

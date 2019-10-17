@@ -5476,7 +5476,29 @@ var PS = {};
           };
       };
   };
+<<<<<<< HEAD:public/untyped-lambda-calculus-1.1.0.js
   exports["compare"] = compare;
+=======
+  var min = function (dictOrd) {
+      return function (x) {
+          return function (y) {
+              var v = compare(dictOrd)(x)(y);
+              if (v instanceof Data_Ordering.LT) {
+                  return x;
+              };
+              if (v instanceof Data_Ordering.EQ) {
+                  return x;
+              };
+              if (v instanceof Data_Ordering.GT) {
+                  return y;
+              };
+              throw new Error("Failed pattern match at Data.Ord (line 158, column 3 - line 161, column 12): " + [ v.constructor.name ]);
+          };
+      };
+  };
+  exports["compare"] = compare;
+  exports["min"] = min;
+>>>>>>> master:public/untyped-lambda-calculus-1.2.0.js
   exports["max"] = max;
   exports["ordInt"] = ordInt;
   exports["ordString"] = ordString;
@@ -24272,7 +24294,10 @@ var PS = {};
   var Data_Show = $PS["Data.Show"];
   var Data_String_CodePoints = $PS["Data.String.CodePoints"];
   var Data_String_CodeUnits = $PS["Data.String.CodeUnits"];
+<<<<<<< HEAD:public/untyped-lambda-calculus-1.1.0.js
   var Data_String_Common = $PS["Data.String.Common"];
+=======
+>>>>>>> master:public/untyped-lambda-calculus-1.2.0.js
   var Data_Unit = $PS["Data.Unit"];
   var Effect_Aff = $PS["Effect.Aff"];
   var Effect_Class = $PS["Effect.Class"];
@@ -24437,6 +24462,7 @@ var PS = {};
   var main = (function () {
       var render = function (state) {
           return Halogen_HTML_Elements.div_([ Halogen_HTML_Elements.header([ Halogen_HTML_Properties.classes([ "flex", "justify-between", "my-4" ]) ])([ Halogen_HTML_Elements.h1([ Halogen_HTML_Properties.classes([ "mx-6", "text-3xl" ]) ])([ Halogen_HTML_Elements.div([ Halogen_HTML_Properties.classes([ "w-12", "h-12", "rounded-full", "bg-indigo-800", "align-middle", "text-center", "font-black" ]) ])([ Halogen_HTML_Core.text("\u03bb") ]) ]), Halogen_HTML_Elements.nav([ Halogen_HTML_Properties.classes([ "mx-2" ]) ])([ Halogen_HTML_Elements.ul([ Halogen_HTML_Properties.classes([ "flex justify-end" ]) ])([ Halogen_HTML_Elements.li_([ Halogen_HTML_Elements.a([ Halogen_HTML_Properties.target("_blank"), Halogen_HTML_Properties.href("https://github.com/utatatata/untyped-lambda-calculus") ])([ Halogen_HTML_Core.text("GitHub") ]) ]) ]) ]) ]), Halogen_HTML_Elements.main([ Halogen_HTML_Properties.classes([ "mx-4", "w-auto" ]) ])([ Halogen_HTML_Elements.section_([ Halogen_HTML_Elements.h2_([ Halogen_HTML_Core.text("REPL") ]), Halogen_HTML_Elements.div([ Halogen_HTML_Properties.classes([ "flex", "flex-col-reverse" ]) ])(Data_Functor.map(Data_Functor.functorArray)(function (v) {
+<<<<<<< HEAD:public/untyped-lambda-calculus-1.1.0.js
               return Halogen_HTML_Elements.div_([ Halogen_HTML_Elements.div([ Halogen_HTML_Properties.class_("flex") ])([ Halogen_HTML_Elements.div([ Halogen_HTML_Properties.classes([ "flex", "justify-end" ]) ])([ Halogen_HTML_Elements.span([ Halogen_HTML_Properties.class_("mr-1") ])([ Halogen_HTML_Core.text("> ") ]) ]), Halogen_HTML_Elements.div([ Halogen_HTML_Properties.classes([ "w-full", "bg-gray-800" ]) ])([ Halogen_HTML_Elements.span([ Halogen_HTML_Properties.classes([ "break-all" ]) ])([ Halogen_HTML_Core.text(v.input) ]) ]) ]), Halogen_HTML_Elements.div([ Halogen_HTML_Properties.class_("break-all") ])([ Halogen_HTML_Core.text(v.output) ]) ]);
           })(state.history)), Halogen_HTML_Elements.div([ Halogen_HTML_Properties.class_("flex") ])([ Halogen_HTML_Elements.div([ Halogen_HTML_Properties.classes([ "flex", "justify-end" ]) ])([ Halogen_HTML_Elements.span([ Halogen_HTML_Properties.class_("mr-1") ])([ Halogen_HTML_Core.text("> ") ]) ]), Halogen_HTML_Elements.div([ Halogen_HTML_Properties.classes([ "select-none", "relative", "w-full", "bg-gray-800" ]), Halogen_HTML_Properties.prop(Halogen_HTML_Core.isPropString)("setStyle")("left: -0.25rem;"), Halogen_HTML_Events.onKeyDown(function ($124) {
               return Data_Maybe.Just.create(KeyDown.create($124));
@@ -24453,16 +24479,32 @@ var PS = {};
               };
               return [  ];
           })()) ]) ]) ]) ]) ]);
+=======
+              return Halogen_HTML_Elements.div_([ Halogen_HTML_Elements.div([ Halogen_HTML_Properties.class_("flex") ])([ Halogen_HTML_Elements.div([ Halogen_HTML_Properties.classes([ "flex", "justify-end" ]) ])([ Halogen_HTML_Elements.span([ Halogen_HTML_Properties.class_("mr-1") ])([ Halogen_HTML_Core.text("> ") ]) ]), Halogen_HTML_Elements.div([ Halogen_HTML_Properties.class_("w-full") ])([ Halogen_HTML_Elements.span([ Halogen_HTML_Properties.classes([ "break-all", "bg-gray-800", "w-full" ]) ])([ Halogen_HTML_Core.text(v.input) ]) ]) ]), Halogen_HTML_Elements.div([ Halogen_HTML_Properties.class_("break-all") ])([ Halogen_HTML_Core.text(v.output) ]) ]);
+          })(state.history)), Halogen_HTML_Elements.div([ Halogen_HTML_Properties.class_("flex") ])([ Halogen_HTML_Elements.div([ Halogen_HTML_Properties.classes([ "flex", "justify-end" ]) ])([ Halogen_HTML_Elements.span([ Halogen_HTML_Properties.class_("mr-1") ])([ Halogen_HTML_Core.text("> ") ]) ]), Halogen_HTML_Elements.div([ Halogen_HTML_Properties.classes([ "select-none", "relative", "w-full", "bg-gray-800" ]), Halogen_HTML_Properties.prop(Halogen_HTML_Core.isPropString)("setStyle")("left: -0.25rem;"), Halogen_HTML_Events.onKeyDown(function ($136) {
+              return Data_Maybe.Just.create(KeyDown.create($136));
+          }), Halogen_HTML_Events.onClick(Data_Function["const"](Data_Maybe.Just.create(new Composition(new FocusById("hidden-repl-input"), MoveCursor.create(Data_String_CodePoints.length(state.input)))))) ])([ Halogen_HTML_Elements.div([ Halogen_HTML_Properties.classes([ "pointer-events-none", "absolute" ]), Halogen_HTML_CSS.style(CSS_Geometry.left(CSS_Size.rem(-0.25 + 0.5 * Data_Int.toNumber(state.cursorPos)))) ])([ Halogen_HTML_Elements.span([  ])([ Halogen_HTML_Core.text("|") ]) ]), Halogen_HTML_Elements.div([  ])([ Halogen_HTML_Elements.input([ Halogen_HTML_Properties.id_("hidden-repl-input"), Halogen_HTML_Properties.autofocus(true), Halogen_HTML_Properties.classes([ "absolute", "w-0", "h-0", "appearance-none", "bg-gray-900", "focus:outline-none", "text-gray-900" ]) ]) ]), Halogen_HTML_Elements.div([ Halogen_HTML_Properties.classes([ "flex" ]) ])(Data_Array.mapWithIndex(function (i) {
+              return function (c) {
+                  return Halogen_HTML_Elements.span([ Halogen_HTML_Properties.class_("w-2"), Halogen_HTML_Events.onClick(function (e) {
+                      return Data_Maybe.Just.create(new Composition(new FocusById("hidden-repl-input"), StopPropagation.create(Web_UIEvent_MouseEvent.toEvent(e))(MoveCursor.create(i + 1 | 0))));
+                  }) ])([ Halogen_HTML_Core.text(Data_String_CodeUnits.singleton(c)) ]);
+              };
+          })(Data_String_CodeUnits.toCharArray(state.input))) ]) ]) ]) ]) ]);
+>>>>>>> master:public/untyped-lambda-calculus-1.2.0.js
       };
       var initialState = function (v) {
           return {
               input: "",
               inputMode: Inputting.value,
+<<<<<<< HEAD:public/untyped-lambda-calculus-1.1.0.js
               cursorPos: {
                   col: 0,
                   x: 0.0,
                   y: 0.0
               },
+=======
+              cursorPos: 0,
+>>>>>>> master:public/untyped-lambda-calculus-1.2.0.js
               history: [  ],
               env: UntypedLambda_Core.standardLibs
           };
@@ -24495,7 +24537,11 @@ var PS = {};
                   if (v4 instanceof Data_Maybe.Just) {
                       return Web_HTML_HTMLElement.focus(v4.value0)();
                   };
+<<<<<<< HEAD:public/untyped-lambda-calculus-1.1.0.js
                   throw new Error("Failed pattern match at Editor (line 108, column 13 - line 110, column 44): " + [ v4.constructor.name ]);
+=======
+                  throw new Error("Failed pattern match at Editor (line 102, column 13 - line 104, column 44): " + [ v4.constructor.name ]);
+>>>>>>> master:public/untyped-lambda-calculus-1.2.0.js
               });
           };
           if (v instanceof HistoryUp) {
@@ -24503,6 +24549,7 @@ var PS = {};
                   var n = (function () {
                       if (v1.inputMode instanceof Inputting) {
                           return 0;
+<<<<<<< HEAD:public/untyped-lambda-calculus-1.1.0.js
                       };
                       if (v1.inputMode instanceof SelectingHistory) {
                           return v1.inputMode.value0 + 1 | 0;
@@ -24682,11 +24729,187 @@ var PS = {};
                           y: 0.0
                       };
                       return $103;
+=======
+                      };
+                      if (v1.inputMode instanceof SelectingHistory) {
+                          return v1.inputMode.value0 + 1 | 0;
+                      };
+                      throw new Error("Failed pattern match at Editor (line 109, column 15 - line 111, column 52): " + [ v1.inputMode.constructor.name ]);
+                  })();
+                  return Control_Bind.bind(Halogen_Query_HalogenM.bindHalogenM)(Control_Monad_State_Class.get(Halogen_Query_HalogenM.monadStateHalogenM))(function (v2) {
+                      var v3 = Data_Array.index(v2.history)(n);
+                      if (v3 instanceof Data_Maybe.Nothing) {
+                          return Control_Applicative.pure(Halogen_Query_HalogenM.applicativeHalogenM)(Data_Unit.unit);
+                      };
+                      if (v3 instanceof Data_Maybe.Just) {
+                          return Control_Monad_State_Class.modify_(Halogen_Query_HalogenM.monadStateHalogenM)(function (v4) {
+                              var $58 = {};
+                              for (var $59 in v4) {
+                                  if ({}.hasOwnProperty.call(v4, $59)) {
+                                      $58[$59] = v4[$59];
+                                  };
+                              };
+                              $58.inputMode = new SelectingHistory(n);
+                              $58.input = v3.value0.input;
+                              $58.cursorPos = Data_String_CodePoints.length(v3.value0.input);
+                              return $58;
+                          });
+                      };
+                      throw new Error("Failed pattern match at Editor (line 115, column 13 - line 117, column 131): " + [ v3.constructor.name ]);
+                  });
+              });
+          };
+          if (v instanceof HistoryDown) {
+              return Control_Bind.bind(Halogen_Query_HalogenM.bindHalogenM)(Control_Monad_State_Class.get(Halogen_Query_HalogenM.monadStateHalogenM))(function (v1) {
+                  if (v1.inputMode instanceof Inputting) {
+                      return Control_Applicative.pure(Halogen_Query_HalogenM.applicativeHalogenM)(Data_Unit.unit);
+                  };
+                  if (v1.inputMode instanceof SelectingHistory && v1.inputMode.value0 === 0) {
+                      return Control_Monad_State_Class.modify_(Halogen_Query_HalogenM.monadStateHalogenM)(function (v2) {
+                          var $68 = {};
+                          for (var $69 in v2) {
+                              if ({}.hasOwnProperty.call(v2, $69)) {
+                                  $68[$69] = v2[$69];
+                              };
+                          };
+                          $68.inputMode = Inputting.value;
+                          $68.input = "";
+                          $68.cursorPos = 0;
+                          return $68;
+                      });
+                  };
+                  if (v1.inputMode instanceof SelectingHistory) {
+                      return Control_Bind.bind(Halogen_Query_HalogenM.bindHalogenM)(Control_Monad_State_Class.get(Halogen_Query_HalogenM.monadStateHalogenM))(function (v2) {
+                          var v3 = Data_Array.index(v2.history)(v1.inputMode.value0 - 1 | 0);
+                          if (v3 instanceof Data_Maybe.Nothing) {
+                              return Control_Applicative.pure(Halogen_Query_HalogenM.applicativeHalogenM)(Data_Unit.unit);
+                          };
+                          if (v3 instanceof Data_Maybe.Just) {
+                              return Control_Monad_State_Class.modify_(Halogen_Query_HalogenM.monadStateHalogenM)(function (v4) {
+                                  var $74 = {};
+                                  for (var $75 in v4) {
+                                      if ({}.hasOwnProperty.call(v4, $75)) {
+                                          $74[$75] = v4[$75];
+                                      };
+                                  };
+                                  $74.inputMode = SelectingHistory.create(v1.inputMode.value0 - 1 | 0);
+                                  $74.input = v3.value0.input;
+                                  $74.cursorPos = Data_String_CodePoints.length(v3.value0.input);
+                                  return $74;
+                              });
+                          };
+                          throw new Error("Failed pattern match at Editor (line 126, column 11 - line 128, column 135): " + [ v3.constructor.name ]);
+                      });
+                  };
+                  throw new Error("Failed pattern match at Editor (line 121, column 7 - line 128, column 135): " + [ v1.inputMode.constructor.name ]);
+              });
+          };
+          if (v instanceof MoveCursor) {
+              return Control_Bind.bind(Halogen_Query_HalogenM.bindHalogenM)(Data_Functor.map(Halogen_Query_HalogenM.functorHalogenM)(function ($137) {
+                  return Data_String_CodePoints.length((function (v1) {
+                      return v1.input;
+                  })($137));
+              })(Control_Monad_State_Class.get(Halogen_Query_HalogenM.monadStateHalogenM)))(function (v1) {
+                  return Control_Monad_State_Class.modify_(Halogen_Query_HalogenM.monadStateHalogenM)(function (v2) {
+                      var $84 = {};
+                      for (var $85 in v2) {
+                          if ({}.hasOwnProperty.call(v2, $85)) {
+                              $84[$85] = v2[$85];
+                          };
+                      };
+                      $84.cursorPos = Data_Ord.max(Data_Ord.ordInt)(0)(Data_Ord.min(Data_Ord.ordInt)(v1)(v.value0));
+                      return $84;
+                  });
+              });
+          };
+          if (v instanceof MoveCursorLeft) {
+              return Control_Bind.bind(Halogen_Query_HalogenM.bindHalogenM)(Control_Monad_State_Class.get(Halogen_Query_HalogenM.monadStateHalogenM))(function (v1) {
+                  return handleAction(MoveCursor.create(v1.cursorPos - 1 | 0));
+              });
+          };
+          if (v instanceof MoveCursorRight) {
+              return Control_Bind.bind(Halogen_Query_HalogenM.bindHalogenM)(Control_Monad_State_Class.get(Halogen_Query_HalogenM.monadStateHalogenM))(function (v1) {
+                  return handleAction(MoveCursor.create(v1.cursorPos + 1 | 0));
+              });
+          };
+          if (v instanceof KeyDown) {
+              var v1 = Web_UIEvent_KeyboardEvent.key(v.value0);
+              if (v1 === "ArrowUp") {
+                  return handleAction(HistoryUp.value);
+              };
+              if (v1 === "ArrowDown") {
+                  return handleAction(HistoryDown.value);
+              };
+              if (v1 === "ArrowLeft") {
+                  return handleAction(MoveCursorLeft.value);
+              };
+              if (v1 === "ArrowRight") {
+                  return handleAction(MoveCursorRight.value);
+              };
+              if (v1 === "Backspace") {
+                  return handleAction(Backspace.value);
+              };
+              if (v1 === "Delete") {
+                  return handleAction(Delete.value);
+              };
+              if (v1 === "Enter") {
+                  return handleAction(Eval.value);
+              };
+              var v2 = Data_Array.uncons(Data_String_CodeUnits.toCharArray(v1));
+              if (v2 instanceof Data_Maybe.Just && v2.value0.tail.length === 0) {
+                  return handleAction(new Insert(v2.value0.head));
+              };
+              return Control_Applicative.pure(Halogen_Query_HalogenM.applicativeHalogenM)(Data_Unit.unit);
+          };
+          if (v instanceof Insert) {
+              return Control_Bind.bind(Halogen_Query_HalogenM.bindHalogenM)(Control_Monad_State_Class.get(Halogen_Query_HalogenM.monadStateHalogenM))(function (v1) {
+                  var v2 = Data_String_CodeUnits.splitAt(v1.cursorPos)(v1.input);
+                  return Control_Monad_State_Class.modify_(Halogen_Query_HalogenM.monadStateHalogenM)(function (v3) {
+                      var $100 = {};
+                      for (var $101 in v3) {
+                          if ({}.hasOwnProperty.call(v3, $101)) {
+                              $100[$101] = v3[$101];
+                          };
+                      };
+                      $100.input = v2.before + (Data_String_CodeUnits.singleton(v.value0) + v2.after);
+                      $100.cursorPos = v1.cursorPos + 1 | 0;
+                      return $100;
+                  });
+              });
+          };
+          if (v instanceof Backspace) {
+              return Control_Bind.bind(Halogen_Query_HalogenM.bindHalogenM)(Control_Monad_State_Class.get(Halogen_Query_HalogenM.monadStateHalogenM))(function (v1) {
+                  return Control_Monad_State_Class.modify_(Halogen_Query_HalogenM.monadStateHalogenM)(function (v2) {
+                      var $109 = {};
+                      for (var $110 in v2) {
+                          if ({}.hasOwnProperty.call(v2, $110)) {
+                              $109[$110] = v2[$110];
+                          };
+                      };
+                      $109.input = Data_String_CodePoints.take(v1.cursorPos - 1 | 0)(v1.input) + Data_String_CodePoints.drop(v1.cursorPos)(v1.input);
+                      $109.cursorPos = Data_Ord.max(Data_Ord.ordInt)(0)(v1.cursorPos - 1 | 0);
+                      return $109;
+                  });
+              });
+          };
+          if (v instanceof Delete) {
+              return Control_Bind.bind(Halogen_Query_HalogenM.bindHalogenM)(Control_Monad_State_Class.get(Halogen_Query_HalogenM.monadStateHalogenM))(function (v1) {
+                  return Control_Monad_State_Class.modify_(Halogen_Query_HalogenM.monadStateHalogenM)(function (v2) {
+                      var $115 = {};
+                      for (var $116 in v2) {
+                          if ({}.hasOwnProperty.call(v2, $116)) {
+                              $115[$116] = v2[$116];
+                          };
+                      };
+                      $115.input = Data_String_CodePoints.take(v1.cursorPos)(v1.input) + Data_String_CodePoints.drop(v1.cursorPos + 1 | 0)(v1.input);
+                      return $115;
+>>>>>>> master:public/untyped-lambda-calculus-1.2.0.js
                   });
               });
           };
           if (v instanceof Eval) {
               return Control_Bind.bind(Halogen_Query_HalogenM.bindHalogenM)(Control_Monad_State_Class.modify(Halogen_Query_HalogenM.monadStateHalogenM)(function (v1) {
+<<<<<<< HEAD:public/untyped-lambda-calculus-1.1.0.js
                   var $108 = {};
                   for (var $109 in v1) {
                       if ({}.hasOwnProperty.call(v1, $109)) {
@@ -24695,10 +24918,21 @@ var PS = {};
                   };
                   $108.inputMode = Inputting.value;
                   return $108;
+=======
+                  var $120 = {};
+                  for (var $121 in v1) {
+                      if ({}.hasOwnProperty.call(v1, $121)) {
+                          $120[$121] = v1[$121];
+                      };
+                  };
+                  $120.inputMode = Inputting.value;
+                  return $120;
+>>>>>>> master:public/untyped-lambda-calculus-1.2.0.js
               }))(function (v1) {
                   var v2 = UntypedLambda_Repl["eval"](v1.env)(v1.input);
                   if (v2 instanceof Data_Either.Right) {
                       return Control_Monad_State_Class.modify_(Halogen_Query_HalogenM.monadStateHalogenM)(function (v3) {
+<<<<<<< HEAD:public/untyped-lambda-calculus-1.1.0.js
                           var $113 = {};
                           for (var $114 in v3) {
                               if ({}.hasOwnProperty.call(v3, $114)) {
@@ -24718,10 +24952,28 @@ var PS = {};
                           })(v1.history);
                           $113.env = v2.value0.value1;
                           return $113;
+=======
+                          var $125 = {};
+                          for (var $126 in v3) {
+                              if ({}.hasOwnProperty.call(v3, $126)) {
+                                  $125[$126] = v3[$126];
+                              };
+                          };
+                          $125.input = "";
+                          $125.inputMode = Inputting.value;
+                          $125.cursorPos = 0;
+                          $125.history = Data_Array.cons({
+                              input: v1.input,
+                              output: UntypedLambda.display(v2.value0.value0)
+                          })(v1.history);
+                          $125.env = v2.value0.value1;
+                          return $125;
+>>>>>>> master:public/untyped-lambda-calculus-1.2.0.js
                       });
                   };
                   if (v2 instanceof Data_Either.Left) {
                       return Control_Monad_State_Class.modify_(Halogen_Query_HalogenM.monadStateHalogenM)(function (v3) {
+<<<<<<< HEAD:public/untyped-lambda-calculus-1.1.0.js
                           var $119 = {};
                           for (var $120 in v3) {
                               if ({}.hasOwnProperty.call(v3, $120)) {
@@ -24746,6 +24998,28 @@ var PS = {};
               });
           };
           throw new Error("Failed pattern match at Editor (line 92, column 18 - line 217, column 16): " + [ v.constructor.name ]);
+=======
+                          var $131 = {};
+                          for (var $132 in v3) {
+                              if ({}.hasOwnProperty.call(v3, $132)) {
+                                  $131[$132] = v3[$132];
+                              };
+                          };
+                          $131.input = "";
+                          $131.inputMode = Inputting.value;
+                          $131.cursorPos = 0;
+                          $131.history = Data_Array.cons({
+                              input: v1.input,
+                              output: Data_Show.show(Text_Parsing_Parser.showParseError)(v2.value0)
+                          })(v1.history);
+                          return $131;
+                      });
+                  };
+                  throw new Error("Failed pattern match at Editor (line 165, column 7 - line 182, column 16): " + [ v2.constructor.name ]);
+              });
+          };
+          throw new Error("Failed pattern match at Editor (line 86, column 18 - line 182, column 16): " + [ v.constructor.name ]);
+>>>>>>> master:public/untyped-lambda-calculus-1.2.0.js
       };
       return Halogen_Aff_Util.runHalogenAff(Control_Bind.bind(Effect_Aff.bindAff)(Halogen_Aff_Util.awaitBody)(function (v) {
           return Halogen_VDom_Driver.runUI(Halogen_Component.mkComponent({
