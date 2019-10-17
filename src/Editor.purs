@@ -1,10 +1,12 @@
 module Editor where
 
 import Prelude hiding (div)
+import Effect.Console (log)
 import DOM.HTML.Indexed.InputType (InputType(..))
-import Data.Array (snoc)
+import Data.Array ((:), index)
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
+import Data.String (length)
 import Data.Tuple (Tuple(..))
 import Effect (Effect)
 import Halogen as H
@@ -19,19 +21,28 @@ import Web.DOM.NonElementParentNode (getElementById)
 import Web.Event.Event (Event)
 import Web.Event.Event as WEvent
 import Web.HTML as WHtml
-import Web.HTML.Window as WWin
 import Web.HTML.HTMLDocument as WDoc
 import Web.HTML.HTMLElement as WElem
+import Web.HTML.HTMLInputElement as WInput
+import Web.HTML.Window as WWin
+import Web.UIEvent.KeyboardEvent (KeyboardEvent)
+import Web.UIEvent.KeyboardEvent as WEventKey
 
 type State
   = { input :: String
+    , inputMode :: InputMode
     , history :: Array { input :: String, output :: String }
     , env :: Environment
     }
 
+data InputMode
+  = Inputting
+  | SelectingHistory Int
+
 data Action
   = PreventDefault Event Action
   | FocusById String
+  | KeyDown KeyboardEvent
   | Input String
   | Eval
 
@@ -52,6 +63,7 @@ main =
   initialState :: Unit -> State
   initialState _ =
     { input: ""
+    , inputMode: Inputting
     , history: []
     , env: standardLibs
     }
@@ -60,7 +72,7 @@ main =
     PreventDefault event action -> do
       H.liftEffect $ WEvent.preventDefault event
       handleAction action
-    FocusById id -> do
+    FocusById id ->
       H.liftEffect
         ( do
             win <- WHtml.window
@@ -70,22 +82,61 @@ main =
               Nothing -> pure unit
               Just elem -> WElem.focus elem
         )
-    Input input -> H.modify_ _ { input = input }
+    KeyDown e -> case WEventKey.key e of
+      "ArrowUp" ->
+        (_.inputMode) <$> H.get
+          >>= case _ of
+              Inputting ->
+                (_.history) <$> H.get <#> (_ `index` 0)
+                  >>= case _ of
+                      Nothing -> pure unit
+                      Just { input, output: _ } ->
+                        H.modify_
+                          _
+                            { inputMode = SelectingHistory 0
+                            , input = input
+                            }
+              SelectingHistory n ->
+                (_.history) <$> H.get <#> (_ `index` (n + 1))
+                  >>= case _ of
+                      Nothing -> pure unit
+                      Just { input, output: _ } ->
+                        H.modify_
+                          _
+                            { inputMode = SelectingHistory $ n + 1
+                            , input = input
+                            }
+      "ArrowDown" ->
+        (_.inputMode) <$> H.get
+          >>= case _ of
+              Inputting -> pure unit
+              SelectingHistory n ->
+                (_.history) <$> H.get <#> (_ `index` (n - 1))
+                  >>= case _ of
+                      Nothing -> pure unit
+                      Just { input, output: _ } ->
+                        H.modify_
+                          _
+                            { inputMode = SelectingHistory $ n - 1
+                            , input = input
+                            }
+      _ -> pure unit
+    Input input -> H.modify_ _ { inputMode = Inputting, input = input }
     Eval -> do
-      state <- H.get
+      state <- H.modify _ { inputMode = Inputting }
       case eval state.env state.input of
         Right (Tuple value env) -> do
           H.modify_
             _
               { input = ""
-              , history = state.history `snoc` { input: state.input, output: display value }
+              , history = { input: state.input, output: display value } : state.history
               , env = env
               }
         Left err -> do
           H.modify_
             _
               { input = ""
-              , history = state.history `snoc` { input: state.input, output: show err }
+              , history = { input: state.input, output: show err } : state.history
               }
 
   render state =
@@ -114,7 +165,7 @@ main =
       , HH.main [ HP.classes [ ClassName "mx-4", ClassName "w-auto" ] ]
           [ HH.section_
               [ HH.h2_ [ HH.text "REPL" ]
-              , HH.div_ $ state.history
+              , HH.div [ HP.classes [ ClassName "flex", ClassName "flex-col-reverse" ] ] $ state.history
                   # map \({ input, output }) ->
                       HH.div_
                         [ HH.div [ HP.class_ $ ClassName "flex" ]
@@ -144,8 +195,10 @@ main =
                                   ]
                               , HP.id_ "repl-input"
                               , HP.type_ InputText
+                              , HP.autocomplete false
                               , HP.value state.input
                               , HE.onValueInput $ Just <<< Input
+                              , HE.onKeyDown $ Just <<< KeyDown
                               ]
                           , HH.span
                               [ HP.classes [ ClassName "break-all", ClassName "absolute", ClassName "left-0", ClassName "bg-gray-800" ]
