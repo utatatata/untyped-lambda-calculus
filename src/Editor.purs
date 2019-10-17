@@ -5,6 +5,7 @@ import CSS as C
 import CSS.Size as CSize
 import Data.Array (index, mapWithIndex, snoc, uncons, (:))
 import Data.Either (Either(..))
+import Data.Foldable (for_)
 import Data.Maybe (Maybe(..))
 import Data.String as S
 import Data.String.CodeUnits (singleton, toCharArray, splitAt)
@@ -38,7 +39,7 @@ import Web.UIEvent.MouseEvent as WUIEMouse
 type State
   = { input :: String
     , inputMode :: InputMode
-    , cursorPos :: CursorPos
+    , cursorPos :: Maybe CursorPos
     , history :: Array { input :: String, output :: String }
     , env :: Environment
     }
@@ -54,12 +55,13 @@ type CursorPos
     }
 
 data Action
-  = Composition Action Action
-  | PreventDefault Event Action
-  | StopPropagation Event Action
+  = Composition (Array Action)
+  | PreventDefault Event
+  | StopPropagation Event
   | FocusById Id
   | HistoryUp
   | HistoryDown
+  | HideCursor
   | MoveCursor Int
   | MoveCursorLeft
   | MoveCursorRight
@@ -96,21 +98,19 @@ main =
   initialState _ =
     { input: ""
     , inputMode: Inputting
-    , cursorPos: { col: 0, left: 0.0, top: 0.0 }
+    , cursorPos: Just { col: 0, left: 0.0, top: 0.0 }
     , history: []
     , env: standardLibs
     }
 
   handleAction = case _ of
-    Composition x y -> do
-      handleAction x
-      handleAction y
-    PreventDefault event action -> do
+    Composition actions -> do
+      for_ actions \a ->
+        handleAction a
+    PreventDefault event -> do
       H.liftEffect $ WEvent.preventDefault event
-      handleAction action
-    StopPropagation event action -> do
+    StopPropagation event -> do
       H.liftEffect $ WEvent.stopPropagation event
-      handleAction action
     FocusById id -> do
       H.liftEffect
         ( do
@@ -121,7 +121,6 @@ main =
               Just html -> do
                 WHElem.focus html
         )
-      H.modify_ _ { inputMode = Inputting }
     HistoryUp -> do
       { inputMode } <- H.get
       ( let
@@ -163,6 +162,7 @@ main =
                   , input = input
                   }
               handleAction $ MoveCursor $ S.length input
+    HideCursor -> H.modify_ _ { cursorPos = Nothing }
     MoveCursor n -> do
       { input } <- H.get
       ( let
@@ -184,15 +184,22 @@ main =
             case maybeOffset of
               Nothing -> do
                 pure unit
-              Just { left, top } -> H.modify_ _ { cursorPos = { col: col, left: left, top: top } }
+              Just { left, top } -> H.modify_ _ { cursorPos = Just { col: col, left: left, top: top } }
       )
     MoveCursorLeft -> do
-      { cursorPos: { col } } <- H.get
-      handleAction $ MoveCursor $ col - 1
+      -- { cursorPos: { col } } <- H.get
+      -- handleAction $ MoveCursor $ col - 1
+      { cursorPos } <- H.get
+      case cursorPos of
+        Nothing -> pure unit
+        Just { col, left: _, top: _ } -> handleAction $ MoveCursor $ col - 1
     MoveCursorRight -> do
-      pure unit
-      { cursorPos: { col } } <- H.get
-      handleAction $ MoveCursor $ col + 1
+      -- { cursorPos: { col } } <- H.get
+      -- handleAction $ MoveCursor $ col + 1
+      { cursorPos } <- H.get
+      case cursorPos of
+        Nothing -> pure unit
+        Just { col, left: _, top: _ } -> handleAction $ MoveCursor $ col + 1
     KeyDown e -> do
       case WUIEKey.key e of
         "ArrowUp" -> handleAction HistoryUp
@@ -206,21 +213,32 @@ main =
           Just { head: c, tail: [] } -> handleAction $ Insert c
           _ -> pure unit
     Insert c -> do
-      { cursorPos: { col }, input } <- H.get
-      ( let
-          { before, after } = splitAt col input
-        in
-          do
-            H.modify_ _ { input = before <> (singleton c) <> after, inputMode = Inputting }
-            handleAction $ MoveCursor $ col + 1
-      )
+      -- { cursorPos: { col }, input } <- H.get
+      { cursorPos, input } <- H.get
+      case cursorPos of
+        Nothing -> pure unit
+        Just { col, left: _, top: _ } ->
+          ( let
+              { before, after } = splitAt col input
+            in
+              do
+                H.modify_ _ { input = before <> (singleton c) <> after, inputMode = Inputting }
+                handleAction $ MoveCursor $ col + 1
+          )
     Backspace -> do
-      { cursorPos: { col }, input } <- H.get
-      H.modify_ _ { input = S.take (col - 1) input <> S.drop col input, inputMode = Inputting }
-      handleAction $ MoveCursor $ col - 1
+      -- { cursorPos: { col }, input } <- H.get
+      { cursorPos, input } <- H.get
+      case cursorPos of
+        Nothing -> pure unit
+        Just { col, left: _, top: _ } -> do
+          H.modify_ _ { input = S.take (col - 1) input <> S.drop col input, inputMode = Inputting }
+          handleAction $ MoveCursor $ col - 1
     Delete -> do
-      { cursorPos: { col }, input } <- H.get
-      H.modify_ _ { input = S.take col input <> S.drop (col + 1) input, inputMode = Inputting }
+      -- { cursorPos: { col }, input } <- H.get
+      { cursorPos, input } <- H.get
+      case cursorPos of
+        Nothing -> pure unit
+        Just { col, left: _, top: _ } -> H.modify_ _ { input = S.take col input <> S.drop (col + 1) input, inputMode = Inputting }
     Eval -> do
       state <- H.get
       case eval state.env state.input of
@@ -290,16 +308,27 @@ main =
                       [ HP.classes [ ClassName "select-none", ClassName "relative", ClassName "w-full", ClassName "bg-gray-800" ]
                       , HP.prop (HHCore.PropName "setStyle") "left: -0.25rem;"
                       , HE.onKeyDown $ Just <<< KeyDown
-                      , HE.onClick $ const $ Just $ Composition (MoveCursor $ S.length state.input) (FocusById HiddenReplInput)
+                      , HE.onClick $ const $ Just $ Composition [ FocusById HiddenReplInput, MoveCursor $ S.length state.input ]
                       ]
                       [ HH.div
-                          [ HP.classes [ ClassName "pointer-events-none", ClassName "absolute" ]
-                          , HC.style do
-                              C.left $ CSize.px state.cursorPos.left
-                              C.top $ CSize.px state.cursorPos.top
-                              -- offset
-                              C.marginLeft $ CSize.rem (-0.2)
-                          ]
+                          ( case state.cursorPos of
+                              Nothing -> [ HP.classes [ ClassName "pointer-events-none", ClassName "absolute", ClassName "invisible" ] ]
+                              Just { col: _, left, top } ->
+                                [ HP.classes [ ClassName "pointer-events-none", ClassName "absolute" ]
+                                , HC.style do
+                                    C.left $ CSize.px left
+                                    C.top $ CSize.px top
+                                    -- offset
+                                    C.marginLeft $ CSize.rem (-0.2)
+                                ]
+                          )
+                          -- [ HP.classes [ ClassName "pointer-events-none", ClassName "absolute" ]
+                          -- , HC.style do
+                          --     C.left $ CSize.px state.cursorPos.left
+                          --     C.top $ CSize.px state.cursorPos.top
+                          --     -- offset
+                          --     C.marginLeft $ CSize.rem (-0.2)
+                          -- ]
                           [ HH.span [] [ HH.text "|" ] ]
                       , HH.div
                           []
@@ -315,6 +344,7 @@ main =
                                   , ClassName "focus:outline-none"
                                   , ClassName "text-gray-900"
                                   ]
+                              , HE.onBlur $ const $ Just $ HideCursor
                               ]
                           ]
                       , HH.div [ HP.id_ $ toString InputLine, HP.classes [ ClassName "flex", ClassName "flex-wrap" ] ]
@@ -322,7 +352,7 @@ main =
                                 # mapWithIndex \i c ->
                                     HH.span
                                       [ HP.class_ $ ClassName "w-2"
-                                      , HE.onClick \e -> Just $ Composition (StopPropagation (WUIEMouse.toEvent e) $ MoveCursor $ i + 1) (FocusById HiddenReplInput)
+                                      , HE.onClick \e -> Just $ Composition [ FocusById HiddenReplInput, StopPropagation $ WUIEMouse.toEvent e, MoveCursor $ i + 1 ]
                                       ]
                                       [ HH.text $ singleton c ]
                             )
