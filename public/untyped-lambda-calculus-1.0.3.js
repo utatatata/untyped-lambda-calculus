@@ -21125,8 +21125,7 @@ var PS = {};
   };
   var value = prop(Halogen_HTML_Core.isPropString)("value");
   var id_ = prop(Halogen_HTML_Core.isPropString)("id");
-  var href = prop(Halogen_HTML_Core.isPropString)("href");        
-  var disabled = prop(Halogen_HTML_Core.isPropBoolean)("disabled");
+  var href = prop(Halogen_HTML_Core.isPropString)("href");   
   var classes = (function () {
       var $14 = prop(Halogen_HTML_Core.isPropString)("className");
       var $15 = Data_String_Common.joinWith(" ");
@@ -21149,7 +21148,6 @@ var PS = {};
   exports["target"] = target;
   exports["type_"] = type_;
   exports["value"] = value;
-  exports["disabled"] = disabled;
   exports["spellcheck"] = spellcheck;
 })(PS);
 (function(exports) {
@@ -23828,12 +23826,12 @@ var PS = {};
   var main = (function () {
       var render = function (state) {
           return Halogen_HTML_Elements.div_([ Halogen_HTML_Elements.header([ Halogen_HTML_Properties.classes([ "flex", "justify-between", "my-4" ]) ])([ Halogen_HTML_Elements.h1([ Halogen_HTML_Properties.classes([ "mx-6", "text-3xl" ]) ])([ Halogen_HTML_Elements.div([ Halogen_HTML_Properties.classes([ "w-12", "h-12", "rounded-full", "bg-indigo-800", "align-middle", "text-center", "font-black" ]) ])([ Halogen_HTML_Core.text("\u03bb") ]) ]), Halogen_HTML_Elements.nav([ Halogen_HTML_Properties.classes([ "mx-2" ]) ])([ Halogen_HTML_Elements.ul([ Halogen_HTML_Properties.classes([ "flex justify-end" ]) ])([ Halogen_HTML_Elements.li_([ Halogen_HTML_Elements.a([ Halogen_HTML_Properties.target("_blank"), Halogen_HTML_Properties.href("https://github.com/utatatata/untyped-lambda-calculus") ])([ Halogen_HTML_Core.text("GitHub") ]) ]) ]) ]) ]), Halogen_HTML_Elements.main([ Halogen_HTML_Properties.classes([ "mx-4", "w-auto" ]) ])([ Halogen_HTML_Elements.section_([ Halogen_HTML_Elements.h2_([ Halogen_HTML_Core.text("REPL") ]), Halogen_HTML_Elements.div_(Data_Functor.map(Data_Functor.functorArray)(function (v) {
-              return Halogen_HTML_Elements.div_([ Halogen_HTML_Elements.div([ Halogen_HTML_Properties.class_("flex") ])([ Halogen_HTML_Elements.div([ Halogen_HTML_Properties.classes([ "flex", "justify-end" ]) ])([ Halogen_HTML_Elements.span([ Halogen_HTML_Properties.class_("mr-1") ])([ Halogen_HTML_Core.text("> ") ]) ]), Halogen_HTML_Elements.div([ Halogen_HTML_Properties.class_("w-full") ])([ Halogen_HTML_Elements.input([ Halogen_HTML_Properties.classes([ "appearance-none", "bg-gray-800", "w-full" ]), Halogen_HTML_Properties.disabled(true), Halogen_HTML_Properties.value(v.input) ]) ]) ]), Halogen_HTML_Elements.div_([ Halogen_HTML_Core.text(v.output) ]) ]);
+              return Halogen_HTML_Elements.div_([ Halogen_HTML_Elements.div([ Halogen_HTML_Properties.class_("flex") ])([ Halogen_HTML_Elements.div([ Halogen_HTML_Properties.classes([ "flex", "justify-end" ]) ])([ Halogen_HTML_Elements.span([ Halogen_HTML_Properties.class_("mr-1") ])([ Halogen_HTML_Core.text("> ") ]) ]), Halogen_HTML_Elements.div([ Halogen_HTML_Properties.class_("w-full") ])([ Halogen_HTML_Elements.span([ Halogen_HTML_Properties.classes([ "break-all", "bg-gray-800", "w-full" ]) ])([ Halogen_HTML_Core.text(v.input) ]) ]) ]), Halogen_HTML_Elements.div([ Halogen_HTML_Properties.class_("break-all") ])([ Halogen_HTML_Core.text(v.output) ]) ]);
           })(state.history)), Halogen_HTML_Elements.form([ Halogen_HTML_Properties.class_("flex"), Halogen_HTML_Events.onSubmit(function (e) {
               return Data_Maybe.Just.create(new PreventDefault(e, Eval.value));
           }) ])([ Halogen_HTML_Elements.div([ Halogen_HTML_Properties.classes([ "flex", "justify-end" ]) ])([ Halogen_HTML_Elements.span([ Halogen_HTML_Properties.class_("mr-1") ])([ Halogen_HTML_Core.text("> ") ]) ]), Halogen_HTML_Elements.div([ Halogen_HTML_Properties.class_("w-full") ])([ Halogen_HTML_Elements.span([ Halogen_HTML_Properties.classes([ "relative" ]) ])([ Halogen_HTML_Elements.input([ Halogen_HTML_Properties.classes([ "w-full", "appearance-none", "bg-gray-800", "focus:outline-none", "text-gray-800" ]), Halogen_HTML_Properties.id_("repl-input"), Halogen_HTML_Properties.type_(Halogen_HTML_Core.isPropInputType)(DOM_HTML_Indexed_InputType.InputText.value), Halogen_HTML_Properties.value(state.input), Halogen_HTML_Events.onValueInput(function ($43) {
               return Data_Maybe.Just.create(Input.create($43));
-          }) ]), Halogen_HTML_Elements.span([ Halogen_HTML_Properties.classes([ "break-all", "absolute", "left-0" ]), Halogen_HTML_Properties.spellcheck(false), Halogen_HTML_Events.onClick(Data_Function["const"](Data_Maybe.Just.create(new FocusById("repl-input")))) ])([ Halogen_HTML_Core.text(state.input) ]) ]) ]) ]) ]) ]) ]);
+          }) ]), Halogen_HTML_Elements.span([ Halogen_HTML_Properties.classes([ "break-all", "absolute", "left-0", "bg-gray-800" ]), Halogen_HTML_Properties.spellcheck(false), Halogen_HTML_Events.onClick(Data_Function["const"](Data_Maybe.Just.create(new FocusById("repl-input")))) ])([ Halogen_HTML_Core.text(state.input) ]) ]) ]) ]) ]) ]) ]);
       };
       var initialState = function (v) {
           return {
