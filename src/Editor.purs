@@ -121,14 +121,13 @@ main =
                             [ HH.div [ HP.classes [ ClassName "flex", ClassName "justify-end" ] ]
                                 [ HH.span [ HP.class_ $ ClassName "mr-1" ] [ HH.text prompt ] ]
                             , HH.div [ HP.class_ $ ClassName "w-full" ]
-                                [ HH.input
-                                    [ HP.classes [ ClassName "appearance-none", ClassName "bg-gray-800", ClassName "w-full" ]
-                                    , HP.disabled true
-                                    , HP.value input
+                                [ HH.span
+                                    [ HP.classes [ ClassName "break-all", ClassName "bg-gray-800", ClassName "w-full" ]
                                     ]
+                                    [ HH.text input ]
                                 ]
                             ]
-                        , HH.div_ [ HH.text output ]
+                        , HH.div [ HP.class_ $ ClassName "break-all" ] [ HH.text output ]
                         ]
               , HH.form [ HP.class_ $ ClassName "flex", HE.onSubmit \e -> Just $ PreventDefault e Eval ]
                   [ HH.div [ HP.classes [ ClassName "flex", ClassName "justify-end" ] ]
@@ -149,7 +148,7 @@ main =
                               , HE.onValueInput $ Just <<< Input
                               ]
                           , HH.span
-                              [ HP.classes [ ClassName "break-all", ClassName "absolute", ClassName "left-0" ]
+                              [ HP.classes [ ClassName "break-all", ClassName "absolute", ClassName "left-0", ClassName "bg-gray-800" ]
                               , HP.spellcheck false
                               , HE.onClick $ const $ Just $ FocusById "repl-input"
                               ]

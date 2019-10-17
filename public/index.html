@@ -8,6 +8,13 @@
       href="https://unpkg.com/tailwindcss@^1.0/dist/tailwind.min.css"
       rel="stylesheet"
     />
+    <style>
+      /* prevent -internal-autofill-selected */
+      input:-webkit-autofill {
+        -webkit-transition: background-color 9999s;
+        transition: background-color 9999s;
+      }
+    </style>
   </head>
   <body class="bg-gray-900 text-white text-base">
     <script src="untyped-lambda-calculus-1.0.2.js"></script>
