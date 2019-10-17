@@ -1,14 +1,15 @@
 module Editor where
 
 import Prelude hiding (div)
-import Effect.Console (log)
 import DOM.HTML.Indexed.InputType (InputType(..))
 import Data.Array ((:), index)
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
 import Data.String (length)
+import Data.String.CodeUnits (singleton, toCharArray)
 import Data.Tuple (Tuple(..))
 import Effect (Effect)
+import Effect.Console (log)
 import Halogen as H
 import Halogen.Aff as HA
 import Halogen.HTML (ClassName(..))
@@ -23,7 +24,6 @@ import Web.Event.Event as WEvent
 import Web.HTML as WHtml
 import Web.HTML.HTMLDocument as WDoc
 import Web.HTML.HTMLElement as WElem
-import Web.HTML.HTMLInputElement as WInput
 import Web.HTML.Window as WWin
 import Web.UIEvent.KeyboardEvent (KeyboardEvent)
 import Web.UIEvent.KeyboardEvent as WEventKey
@@ -31,6 +31,7 @@ import Web.UIEvent.KeyboardEvent as WEventKey
 type State
   = { input :: String
     , inputMode :: InputMode
+    , cursorPos :: Int
     , history :: Array { input :: String, output :: String }
     , env :: Environment
     }
@@ -41,7 +42,11 @@ data InputMode
 
 data Action
   = PreventDefault Event Action
+  | StopPropagation Event Action
   | FocusById String
+  | HistoryUp
+  | HistoryDown
+  | MoveCursor Int
   | KeyDown KeyboardEvent
   | Input String
   | Eval
@@ -64,6 +69,7 @@ main =
   initialState _ =
     { input: ""
     , inputMode: Inputting
+    , cursorPos: 0
     , history: []
     , env: standardLibs
     }
@@ -72,6 +78,10 @@ main =
     PreventDefault event action -> do
       H.liftEffect $ WEvent.preventDefault event
       handleAction action
+    StopPropagation event action -> do
+      H.liftEffect $ WEvent.stopPropagation event
+      handleAction action
+    -- REMOVE
     FocusById id ->
       H.liftEffect
         ( do
@@ -82,45 +92,38 @@ main =
               Nothing -> pure unit
               Just elem -> WElem.focus elem
         )
-    KeyDown e -> case WEventKey.key e of
-      "ArrowUp" ->
-        (_.inputMode) <$> H.get
-          >>= case _ of
-              Inputting ->
-                (_.history) <$> H.get <#> (_ `index` 0)
-                  >>= case _ of
-                      Nothing -> pure unit
-                      Just { input, output: _ } ->
-                        H.modify_
-                          _
-                            { inputMode = SelectingHistory 0
-                            , input = input
-                            }
-              SelectingHistory n ->
-                (_.history) <$> H.get <#> (_ `index` (n + 1))
-                  >>= case _ of
-                      Nothing -> pure unit
-                      Just { input, output: _ } ->
-                        H.modify_
-                          _
-                            { inputMode = SelectingHistory $ n + 1
-                            , input = input
-                            }
-      "ArrowDown" ->
-        (_.inputMode) <$> H.get
-          >>= case _ of
-              Inputting -> pure unit
-              SelectingHistory n ->
-                (_.history) <$> H.get <#> (_ `index` (n - 1))
-                  >>= case _ of
-                      Nothing -> pure unit
-                      Just { input, output: _ } ->
-                        H.modify_
-                          _
-                            { inputMode = SelectingHistory $ n - 1
-                            , input = input
-                            }
-      _ -> pure unit
+    HistoryUp -> do
+      { inputMode } <- H.get
+      ( let
+          n = case inputMode of
+            Inputting -> 0
+            SelectingHistory current -> current + 1
+        in
+          do
+            { history } <- H.get
+            case history `index` n of
+              Nothing -> pure unit
+              Just { input, output: _ } -> H.modify_ _ { inputMode = SelectingHistory n, input = input }
+      )
+    HistoryDown -> do
+      { inputMode } <- H.get
+      case inputMode of
+        Inputting -> pure unit
+        SelectingHistory 0 -> H.modify_ _ { inputMode = Inputting, input = "" }
+        SelectingHistory n -> do
+          { history } <- H.get
+          case history `index` (n - 1) of
+            Nothing -> pure unit
+            Just { input, output: _ } -> H.modify_ _ { inputMode = SelectingHistory $ n - 1, input = input }
+    MoveCursor n -> do
+      len <- length <<< (_.input) <$> H.get
+      H.modify_ _ { cursorPos = min len n }
+    KeyDown e -> do
+      H.liftEffect $ log $ WEventKey.key e <> " " <> WEventKey.code e
+      case WEventKey.key e of
+        "ArrowUp" -> handleAction HistoryUp
+        "ArrowDown" -> handleAction HistoryDown
+        _ -> pure unit
     Input input -> H.modify_ _ { inputMode = Inputting, input = input }
     Eval -> do
       state <- H.modify _ { inputMode = Inputting }
