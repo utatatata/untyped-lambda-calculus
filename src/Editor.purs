@@ -116,8 +116,10 @@ main =
         ( do
             maybeElem <- byId id
             case maybeElem >>= WHElem.fromElement of
-              Nothing -> pure unit
-              Just elem -> WHElem.focus elem
+              Nothing -> do
+                pure unit
+              Just html -> do
+                WHElem.focus html
         )
       H.modify_ _ { inputMode = Inputting }
     HistoryUp -> do
@@ -238,7 +240,7 @@ main =
     byId :: Id -> Effect (Maybe Element)
     byId id = do
       doc <- WHWin.document =<< WH.window
-      getElementById (toString InputLine) $ WDoc.toNonElementParentNode doc
+      getElementById (toString id) $ WDoc.toNonElementParentNode doc
 
   render state =
     HH.div_
@@ -288,7 +290,7 @@ main =
                       [ HP.classes [ ClassName "select-none", ClassName "relative", ClassName "w-full", ClassName "bg-gray-800" ]
                       , HP.prop (HHCore.PropName "setStyle") "left: -0.25rem;"
                       , HE.onKeyDown $ Just <<< KeyDown
-                      , HE.onClick $ const $ Just $ Composition (FocusById HiddenReplInput) (MoveCursor $ S.length state.input)
+                      , HE.onClick $ const $ Just $ Composition (MoveCursor $ S.length state.input) (FocusById HiddenReplInput)
                       ]
                       [ HH.div
                           [ HP.classes [ ClassName "pointer-events-none", ClassName "absolute" ]
@@ -320,7 +322,7 @@ main =
                                 # mapWithIndex \i c ->
                                     HH.span
                                       [ HP.class_ $ ClassName "w-2"
-                                      , HE.onClick \e -> Just $ Composition (FocusById HiddenReplInput) (StopPropagation (WUIEMouse.toEvent e) $ MoveCursor $ i + 1)
+                                      , HE.onClick \e -> Just $ Composition (StopPropagation (WUIEMouse.toEvent e) $ MoveCursor $ i + 1) (FocusById HiddenReplInput)
                                       ]
                                       [ HH.text $ singleton c ]
                             )
