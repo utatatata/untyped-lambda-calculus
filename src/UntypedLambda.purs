@@ -7,7 +7,7 @@ module UntypedLambda
 import Prelude
 import UntypedLambda.Core (Value(..), VApplication(..), Environment, standardLibs)
 import UntypedLambda.Core as Core
-import UntypedLambda.Repl (eval)
+import UntypedLambda.Repl (EvalError(..), eval)
 
 display :: Value -> String
 display = Core.display <<< Core.asExpression
