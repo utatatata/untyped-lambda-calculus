@@ -10,6 +10,7 @@ import Data.Maybe (Maybe(..))
 import Data.String as S
 import Data.String.CodeUnits (singleton, toCharArray, splitAt)
 import Data.Tuple (Tuple(..))
+import DOM.HTML.Indexed.InputType (InputType(..))
 import Effect (Effect)
 import Halogen as H
 import Halogen.Aff as HA
@@ -320,6 +321,7 @@ main =
                           []
                           [ HH.input
                               [ HP.id_ $ toString HiddenReplInput
+                              , HP.type_ InputText
                               , HP.autofocus true
                               , HP.classes
                                   [ ClassName "absolute"
