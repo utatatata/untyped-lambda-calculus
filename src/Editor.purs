@@ -3,13 +3,12 @@ module Editor where
 import Prelude
 import Data.Array (index, (:))
 import Data.Either (Either(..))
+import Data.Foldable (for_)
 import Data.Int (round)
 import Data.Maybe (Maybe(..))
 import Data.String.CodeUnits as S
 import Data.Tuple (Tuple(..))
 import Effect (Effect)
-import Effect.Console (log)
-import Halogen (ClassName(..))
 import Halogen as H
 import Halogen.Aff as HA
 import Halogen.HTML as HH
@@ -20,6 +19,7 @@ import UntypedLambda (Environment, EvalError(..), eval, display, standardLibs)
 import Web.DOM as D
 import Web.DOM.Element as DE
 import Web.DOM.NonElementParentNode as DN
+import Web.Event.Event as WE
 import Web.HTML as WH
 import Web.HTML.CSSStyleDeclaration as WHS
 import Web.HTML.HTMLDocument as WHD
@@ -39,7 +39,9 @@ data InputMode
   | SelectingHistory Int
 
 data Action
-  = Input String
+  = Composition (Array Action)
+  | PreventDefault WE.Event
+  | Input String
   | Eval
   | KeyDown WK.KeyboardEvent
   -- | ResizeTextArea
@@ -80,13 +82,17 @@ main =
     }
 
   handleAction = case _ of
+    Composition actions ->
+      for_ actions \a ->
+        handleAction a
+    PreventDefault e -> H.liftEffect $ WE.preventDefault e
     Input input -> do
-      H.modify_ _ { input = input }
+      H.modify_ _ { input = input, inputMode = Inputting }
       handleAction $ CalculateTextAreaRows input
     Eval -> do
       state <- H.get
       case eval state.env state.input of
-        Right (Tuple value env) ->
+        Right (Tuple value env) -> do
           H.modify_
             _
               { history = { input: state.input, output: display value } : state.history
@@ -98,11 +104,9 @@ main =
               { history = { input: state.input, output: msg } : state.history }
       H.modify_ _ { input = "", textAreaRows = 1, inputMode = Inputting }
     KeyDown e -> case WK.key e of
-      "Enter" ->
-        if WK.ctrlKey e || WK.shiftKey e || WK.altKey e || WK.metaKey e then do
-          handleAction Eval
-        else
-          pure unit
+      "Enter" -> handleAction $ Composition [ PreventDefault $ WK.toEvent e, Eval ]
+      "ArrowUp" -> handleAction $ Composition [ PreventDefault $ WK.toEvent e, HistoryUp ]
+      "ArrowDown" -> handleAction $ Composition [ PreventDefault $ WK.toEvent e, HistoryDown ]
       _ -> pure unit
     CalculateTextAreaRows input -> do
       maybeRows <-
@@ -114,7 +118,6 @@ main =
                 Just elem -> do
                   height <- DE.scrollHeight elem
                   lineHeight <- WHS.lineHeight =<< WHS.getComputedStyle elem =<< WH.window
-                  log $ show height <> " " <> show lineHeight <> " " <> show (round $ height / lineHeight)
                   ( let
                       rows = round $ height / lineHeight
 
@@ -141,18 +144,22 @@ main =
             case history `index` n of
               -- oldest history
               Nothing -> pure unit
-              Just { input, output: _ } -> H.modify_ _ { input = input, inputMode = SelectingHistory n }
+              Just { input, output: _ } -> do
+                H.modify_ _ { input = input, inputMode = SelectingHistory n }
+                handleAction $ CalculateTextAreaRows input
       )
     HistoryDown -> do
       { inputMode } <- H.get
       case inputMode of
         Inputting -> pure unit
-        SelectingHistory 0 -> H.modify_ _ { input = "", inputMode = Inputting }
+        SelectingHistory 0 -> H.modify_ _ { input = "", textAreaRows = 1, inputMode = Inputting }
         SelectingHistory n -> do
           { history } <- H.get
           case history `index` (n - 1) of
             Nothing -> pure unit
-            Just { input, output: _ } -> H.modify_ _ { input = input, inputMode = SelectingHistory $ n - 1 }
+            Just { input, output: _ } -> do
+              H.modify_ _ { input = input, inputMode = SelectingHistory $ n - 1 }
+              handleAction $ CalculateTextAreaRows input
     where
     byId :: Id -> Effect (Maybe D.Element)
     byId id = do
@@ -197,8 +204,8 @@ main =
                                 [ HH.span [ HP.classes [ HH.ClassName "mr-1" ] ]
                                     [ HH.text prompt ]
                                 ]
-                            , HH.pre [ HP.classes [ HH.ClassName "w-full", HH.ClassName "bg-gray-800" ] ]
-                                [ HH.span [ HP.classes [ HH.ClassName "break-all" ] ]
+                            , HH.div [ HP.classes [ HH.ClassName "w-full", HH.ClassName "bg-gray-800" ] ]
+                                [ HH.span [ HP.classes [ HH.ClassName "break-all", HH.ClassName "whitespace-pre-wrap" ] ]
                                     [ HH.text input ]
                                 ]
                             ]
@@ -207,7 +214,7 @@ main =
               , HH.div [ HP.classes [ HH.ClassName "flex" ] ]
                   [ HH.div [ HP.classes [ HH.ClassName "flex", HH.ClassName "justify-end" ] ]
                       [ HH.span [ HP.classes [ HH.ClassName "mr-1" ] ] [ HH.text prompt ] ]
-                  , HH.div [ HP.classes [ HH.ClassName "flex", ClassName "w-full" ] ]
+                  , HH.div [ HP.classes [ HH.ClassName "flex", HH.ClassName "relative", HH.ClassName "w-full" ] ]
                       [ HH.textarea
                           [ HP.id_ $ getString TextAreaId
                           , HP.classes
@@ -216,6 +223,8 @@ main =
                               , HH.ClassName "focus:outline-none"
                               , HH.ClassName "bg-gray-800"
                               , HH.ClassName "resize-none"
+                              -- prevent the appearance of scroll bar
+                              , HH.ClassName "overflow-y-hidden"
                               -- to hide a absolute div below
                               , HH.ClassName "z-10"
                               ]
@@ -225,13 +234,15 @@ main =
                           , HE.onKeyDown $ Just <<< KeyDown
                           , HE.onValueInput $ Just <<< Input
                           ]
-                      , HH.pre
+                      , HH.div
                           [ HP.id_ $ getString BehindTextAreaId
                           , HP.classes
                               [ HH.ClassName "absolute"
+                              , HH.ClassName "w-full"
                               , HH.ClassName "break-all"
                               , HH.ClassName "bg-gray-900"
                               , HH.ClassName "text-gray-900"
+                              , HH.ClassName "whitespace-pre-wrap"
                               ]
                           ]
                           [ HH.text state.input ]
