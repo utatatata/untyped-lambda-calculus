@@ -1,13 +1,15 @@
 module Editor where
 
 import Prelude
-import Data.Array ((:))
+import Data.Array (index, (:))
 import Data.Either (Either(..))
-import Data.Foldable (for_)
 import Data.Int (round)
 import Data.Maybe (Maybe(..))
+import Data.String.CodeUnits as S
 import Data.Tuple (Tuple(..))
 import Effect (Effect)
+import Effect.Console (log)
+import Halogen (ClassName(..))
 import Halogen as H
 import Halogen.Aff as HA
 import Halogen.HTML as HH
@@ -21,14 +23,13 @@ import Web.DOM.NonElementParentNode as DN
 import Web.HTML as WH
 import Web.HTML.CSSStyleDeclaration as WHS
 import Web.HTML.HTMLDocument as WHD
-import Web.HTML.HTMLTextAreaElement as WHTA
 import Web.HTML.Window as WHW
 import Web.UIEvent.KeyboardEvent as WK
 
 type State
   = { input :: String
     , inputMode :: InputMode
-    , textareaRows :: Int
+    , textAreaRows :: Int
     , history :: Array { input :: String, output :: String }
     , env :: Environment
     }
@@ -38,17 +39,22 @@ data InputMode
   | SelectingHistory Int
 
 data Action
-  = Composition (Array Action)
-  | Input String
+  = Input String
   | Eval
   | KeyDown WK.KeyboardEvent
-  | ResizeTextArea
+  -- | ResizeTextArea
+  | CalculateTextAreaRows String
+  | HistoryUp
+  | HistoryDown
 
 data Id
-  = TextareaId
+  = TextAreaId
+  | BehindTextAreaId
 
 getString :: Id -> String
-getString (TextareaId) = "repl-input-textarea-id"
+getString (TextAreaId) = "repl-input-textarea-id"
+
+getString (BehindTextAreaId) = "behind-text-area-id"
 
 main :: Effect Unit
 main =
@@ -68,16 +74,15 @@ main =
   initialState _ =
     { input: ""
     , inputMode: Inputting
-    , textareaRows: 1
+    , textAreaRows: 1
     , history: []
     , env: standardLibs
     }
 
   handleAction = case _ of
-    Composition actions ->
-      for_ actions \a ->
-        handleAction a
-    Input input -> H.modify_ _ { input = input }
+    Input input -> do
+      H.modify_ _ { input = input }
+      handleAction $ CalculateTextAreaRows input
     Eval -> do
       state <- H.get
       case eval state.env state.input of
@@ -91,33 +96,63 @@ main =
           H.modify_
             _
               { history = { input: state.input, output: msg } : state.history }
-      H.modify_ _ { input = "", inputMode = Inputting }
+      H.modify_ _ { input = "", textAreaRows = 1, inputMode = Inputting }
     KeyDown e -> case WK.key e of
       "Enter" ->
-        if WK.ctrlKey e || WK.shiftKey e || WK.altKey e || WK.metaKey e then
+        if WK.ctrlKey e || WK.shiftKey e || WK.altKey e || WK.metaKey e then do
           handleAction Eval
         else
           pure unit
       _ -> pure unit
-    ResizeTextArea -> do
+    CalculateTextAreaRows input -> do
       maybeRows <-
         H.liftEffect
           $ do
-              maybeElem <- byId TextareaId
+              maybeElem <- byId BehindTextAreaId
               case maybeElem of
                 Nothing -> pure Nothing
                 Just elem -> do
-                  -- reset rows: force render?
-                  case WHTA.fromElement elem of
-                    Nothing -> pure unit
-                    Just e -> WHTA.setRows 1 e
                   height <- DE.scrollHeight elem
                   lineHeight <- WHS.lineHeight =<< WHS.getComputedStyle elem =<< WH.window
-                  pure $ Just $ round $ height / lineHeight
+                  log $ show height <> " " <> show lineHeight <> " " <> show (round $ height / lineHeight)
+                  ( let
+                      rows = round $ height / lineHeight
+
+                      last = S.takeRight 1 input
+                    in
+                      -- consider an empty line
+                      if last == "" || last == "\n" || last == "\r" then
+                        pure $ Just $ rows + 1
+                      else
+                        pure $ Just rows
+                  )
       case maybeRows of
         Nothing -> pure unit
-        Just rows -> do
-          H.modify_ _ { textareaRows = rows }
+        Just rows -> H.modify_ _ { textAreaRows = rows }
+    HistoryUp -> do
+      { inputMode } <- H.get
+      ( let
+          n = case inputMode of
+            Inputting -> 0
+            SelectingHistory current -> current + 1
+        in
+          do
+            { history } <- H.get
+            case history `index` n of
+              -- oldest history
+              Nothing -> pure unit
+              Just { input, output: _ } -> H.modify_ _ { input = input, inputMode = SelectingHistory n }
+      )
+    HistoryDown -> do
+      { inputMode } <- H.get
+      case inputMode of
+        Inputting -> pure unit
+        SelectingHistory 0 -> H.modify_ _ { input = "", inputMode = Inputting }
+        SelectingHistory n -> do
+          { history } <- H.get
+          case history `index` (n - 1) of
+            Nothing -> pure unit
+            Just { input, output: _ } -> H.modify_ _ { input = input, inputMode = SelectingHistory $ n - 1 }
     where
     byId :: Id -> Effect (Maybe D.Element)
     byId id = do
@@ -162,7 +197,7 @@ main =
                                 [ HH.span [ HP.classes [ HH.ClassName "mr-1" ] ]
                                     [ HH.text prompt ]
                                 ]
-                            , HH.div [ HP.classes [ HH.ClassName "w-full", HH.ClassName "bg-gray-800" ] ]
+                            , HH.pre [ HP.classes [ HH.ClassName "w-full", HH.ClassName "bg-gray-800" ] ]
                                 [ HH.span [ HP.classes [ HH.ClassName "break-all" ] ]
                                     [ HH.text input ]
                                 ]
@@ -172,20 +207,34 @@ main =
               , HH.div [ HP.classes [ HH.ClassName "flex" ] ]
                   [ HH.div [ HP.classes [ HH.ClassName "flex", HH.ClassName "justify-end" ] ]
                       [ HH.span [ HP.classes [ HH.ClassName "mr-1" ] ] [ HH.text prompt ] ]
-                  , HH.textarea
-                      [ HP.id_ $ getString TextareaId
-                      , HP.classes
-                          [ HH.ClassName "w-full"
-                          , HH.ClassName "apperance-none"
-                          , HH.ClassName "focus:outline-none"
-                          , HH.ClassName "bg-gray-800"
-                          , HH.ClassName "resize-none"
+                  , HH.div [ HP.classes [ HH.ClassName "flex", ClassName "w-full" ] ]
+                      [ HH.textarea
+                          [ HP.id_ $ getString TextAreaId
+                          , HP.classes
+                              [ HH.ClassName "w-full"
+                              , HH.ClassName "apperance-none"
+                              , HH.ClassName "focus:outline-none"
+                              , HH.ClassName "bg-gray-800"
+                              , HH.ClassName "resize-none"
+                              -- to hide a absolute div below
+                              , HH.ClassName "z-10"
+                              ]
+                          , HP.rows state.textAreaRows
+                          , HP.autofocus true
+                          , HP.value state.input
+                          , HE.onKeyDown $ Just <<< KeyDown
+                          , HE.onValueInput $ Just <<< Input
                           ]
-                      , HP.rows state.textareaRows
-                      , HP.autofocus true
-                      , HP.value state.input
-                      , HE.onKeyDown $ Just <<< KeyDown
-                      , HE.onValueInput \str -> Just $ Composition [ Input str, ResizeTextArea ]
+                      , HH.pre
+                          [ HP.id_ $ getString BehindTextAreaId
+                          , HP.classes
+                              [ HH.ClassName "absolute"
+                              , HH.ClassName "break-all"
+                              , HH.ClassName "bg-gray-900"
+                              , HH.ClassName "text-gray-900"
+                              ]
+                          ]
+                          [ HH.text state.input ]
                       ]
                   ]
               ]
