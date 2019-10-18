@@ -44,6 +44,7 @@ data Action
   | Input String
   | Eval
   | KeyDown WK.KeyboardEvent
+  | KeyUp WK.KeyboardEvent
   -- | ResizeTextArea
   | CalculateTextAreaRows String
   | HistoryUp
@@ -104,9 +105,13 @@ main =
               { history = { input: state.input, output: msg } : state.history }
       H.modify_ _ { input = "", textAreaRows = 1, inputMode = Inputting }
     KeyDown e -> case WK.key e of
-      "Enter" -> handleAction $ Composition [ PreventDefault $ WK.toEvent e, Eval ]
+      "Enter" -> handleAction $ Composition [ PreventDefault $ WK.toEvent e ]
       "ArrowUp" -> handleAction $ Composition [ PreventDefault $ WK.toEvent e, HistoryUp ]
       "ArrowDown" -> handleAction $ Composition [ PreventDefault $ WK.toEvent e, HistoryDown ]
+      _ -> pure unit
+    KeyUp e -> case WK.key e of
+      -- onKeyDown is PC only, but onKeyUp work with both PC and smartphone (software keyboard)
+      "Enter" -> handleAction $ Composition [ PreventDefault $ WK.toEvent e, Eval ]
       _ -> pure unit
     CalculateTextAreaRows input -> do
       maybeRows <-
@@ -232,6 +237,7 @@ main =
                           , HP.autofocus true
                           , HP.value state.input
                           , HE.onKeyDown $ Just <<< KeyDown
+                          , HE.onKeyUp $ Just <<< KeyUp
                           , HE.onValueInput $ Just <<< Input
                           ]
                       , HH.div
