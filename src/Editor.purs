@@ -175,9 +175,10 @@ main =
     HH.div_
       [ HH.header [ HP.classes [ HH.ClassName "flex", HH.ClassName "justify-between", HH.ClassName "my-4" ] ]
           [ HH.h1 [ HP.classes [ HH.ClassName "mx-6", HH.ClassName "text-3xl" ] ]
-              [ HH.div
+              [ HH.span
                   [ HP.classes
-                      [ HH.ClassName "w-12"
+                      [ HH.ClassName "inline-block"
+                      , HH.ClassName "w-12"
                       , HH.ClassName "h-12"
                       , HH.ClassName "rounded-full"
                       , HH.ClassName "bg-indigo-800"
@@ -186,7 +187,11 @@ main =
                       , HH.ClassName "font-black"
                       ]
                   ]
-                  [ HH.text "λ" ]
+                  [ HH.span
+                      -- pt-1 is for a design because λ appears to float a little
+                      [ HP.classes [ HH.ClassName "inline-block", HH.ClassName "pt-1" ] ]
+                      [ HH.text "λ" ]
+                  ]
               ]
           , HH.nav [ HP.classes [ HH.ClassName "mx-2" ] ]
               [ HH.ul [ HP.classes [ HH.ClassName "flex", HH.ClassName "justify-end" ] ]
