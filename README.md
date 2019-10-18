@@ -5,7 +5,6 @@
 ## TODO
 
 - [ ] Multilin input: `:paste`
-- [ ] Allow keyboard shortcuts: `Ctrl+C`, `Ctrl+P`, `Ctrl+X`, `Ctrl+A`
 - [ ] Implement other evaluation strategies: Call by need, Call by name
 - [ ] Display the environment
 - [ ] Add an editor page
