@@ -29,6 +29,8 @@ testExpression =
       testValid "λ   m  n f x  .m f ( n f x  )" $ LambdaAbstraction "m" $ LambdaAbstraction "n" $ LambdaAbstraction "f" $ LambdaAbstraction "x" $ Application (Application (Variable "m") (Variable "f")) $ Application (Application (Variable "n") (Variable "f")) (Variable "x")
       testValid "x (λy.y) z" $ Application (Application (Variable "x") $ LambdaAbstraction "y" $ Variable "y") $ Variable "z"
       testValid "x λy.y z" $ Application (Variable "x") $ LambdaAbstraction "y" $ Application (Variable "y") $ Variable "z"
+      testValid "x\n" $ Variable "x"
+      testValid "x\ny" $ Application (Variable "x") $ Variable "y"
   where
   testValid code result =
     it code do
