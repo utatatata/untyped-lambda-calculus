@@ -51,6 +51,6 @@ eval env input = case runParser input define of
 
         Position { column, line } = parseErrorPosition error
       in
-        case inputLines `index` line of
-          Just inputLine -> Left $ ParseError $ message <> ": near '" <> take column inputLine <> "'"
-          Nothing -> Left $ ParseError message
+        case inputLines `index` (line - 1) of
+          Just inputLine -> Left $ ParseError $ message <> " near '" <> take column inputLine <> "'"
+          Nothing -> Left $ ParseError $ message
