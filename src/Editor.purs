@@ -184,6 +184,7 @@ main =
             [ HH.h1 [ HP.classes [ HH.ClassName "mx-6", HH.ClassName "text-3xl" ] ]
                 [ HH.span
                     [ HP.classes
+                        -- logo
                         [ HH.ClassName "inline-block"
                         , HH.ClassName "w-12"
                         , HH.ClassName "h-12"
@@ -233,11 +234,12 @@ main =
                           else
                             []
                     )
-                    ( Dummy $ HH.div [ HP.classes [ HH.ClassName "flex", HH.ClassName "flex-col" ] ] $ repl.inputPool
-                        # map \input ->
-                            HH.span [ HP.classes [ HH.ClassName "break-all", HH.ClassName "whitespace-pre-wrap" ] ]
-                              [ HH.text input ]
-                    )
+                    $ Dummy
+                    $ HH.div [ HP.classes [ HH.ClassName "flex", HH.ClassName "flex-col" ] ]
+                    $ repl.inputPool
+                    # map \input ->
+                        HH.span [ HP.classes [ HH.ClassName "break-all", HH.ClassName "whitespace-pre-wrap" ] ]
+                          [ HH.text input ]
                 , inputLine [] $ TextArea
                     $ case repl.inputMode of
                         R.Singleline -> WithPrompt
@@ -250,18 +252,16 @@ main =
             ]
         ]
     where
-    prompt = ">"
-
     inputLine classes mode = case mode of
       Dummy input ->
         HH.div [ HP.classes $ [ HH.ClassName "flex" ] <> classes ]
-          $ promptWrapper WithPrompt
+          $ prompt WithPrompt
           : [ HH.div [ HP.classes [ HH.ClassName "w-full", HH.ClassName "bg-gray-800" ] ]
                 [ input ]
             ]
       TextArea withPrompt ->
         HH.div [ HP.classes $ [ HH.ClassName "flex" ] <> classes ]
-          $ promptWrapper withPrompt
+          $ prompt withPrompt
           : [ HH.div
                 [ HP.classes
                     $ [ HH.ClassName "flex", HH.ClassName "relative", HH.ClassName "w-full" ]
@@ -301,7 +301,7 @@ main =
                 ]
             ]
       where
-      promptWrapper withPrompt =
+      prompt withPrompt =
         HH.div
           [ HP.classes
               $ [ HH.ClassName "flex", HH.ClassName "justify-end" ]
@@ -310,5 +310,5 @@ main =
                   WithoutPrompt -> [ HH.ClassName "invisible" ]
           ]
           [ HH.span [ HP.classes [ HH.ClassName "mr-1" ] ]
-              [ HH.text prompt ]
+              [ HH.text ">" ]
           ]
