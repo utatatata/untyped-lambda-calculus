@@ -211,10 +211,22 @@ main =
                     ]
                 ]
             ]
-        , HH.main [ HP.classes [ HH.ClassName "mx-4", HH.ClassName "w-auto" ] ]
-            [ HH.section_
-                [ HH.h2_ [ HH.text "REPL" ]
-                , HH.div [ HP.classes [ HH.ClassName "flex", HH.ClassName "flex-col" ] ] $ repl.history
+        , HH.main
+            [ HP.classes
+                [ HH.ClassName "mx-4"
+                , HH.ClassName "w-auto"
+                , HH.ClassName "border-2"
+                , HH.ClassName "border-gray-800"
+                , HH.ClassName "rounded-lg"
+                , HH.ClassName "p-2"
+                ]
+            ]
+            [ HH.ul [ HP.classes [ HH.ClassName "flex", HH.ClassName "border-b", HH.ClassName "p-1", HH.ClassName "mb-5" ] ]
+                [ HH.li [ HP.classes [] ] [ HH.text "REPL" ]
+                , HH.li [ HP.classes [] ] [ HH.text "Environment" ]
+                ]
+            , HH.section_
+                [ HH.div [ HP.classes [ HH.ClassName "flex", HH.ClassName "flex-col" ] ] $ repl.history
                     # map \({ input, output }) ->
                         HH.div_
                           $ [ inputLine [] $ Dummy

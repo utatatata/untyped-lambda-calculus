@@ -1,0 +1,19 @@
+{
+  "name": "untyped-lambda-calculus",
+  "version": "1.5.0",
+  "description": "A PureScript implementation of the untyped lambda calculus",
+  "repository": "git@github.com:utatatata/untyped-lambda-calculus.git",
+  "author": "utakuma <i@utakuma.info>",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "build:ps": "spago bundle-app -m Editor --to public/untyped-lambda-calculus-1.5.0.js",
+    "build:css": "yarn tailwind build assets/css/styles.css -o public/untyped-lambda-calculus-1.5.0.css"
+  },
+  "dependencies": {
+    "tailwindcss": "^1.1.2"
+  },
+  "devDependencies": {
+    "tailwind": "^4.0.0"
+  }
+}
