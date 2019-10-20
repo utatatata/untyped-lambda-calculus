@@ -4,7 +4,7 @@
 
 ## TODO
 
-- [ ] Multilin input: `:paste`
+- [x] Multilin input: `:paste`
 - [ ] Implement other evaluation strategies: Call by need, Call by name
 - [ ] Display the environment
 - [ ] Add an editor page
@@ -12,3 +12,4 @@
 - [ ] Design for Desktop
 - [ ] Design for Tablet
 - [ ] Reimplement standardLibs as a source code
+- [ ] Add history up/down buttons for a smartphone
