@@ -45,7 +45,6 @@ data Action
   | Eval
   | KeyDown WK.KeyboardEvent
   | KeyUp WK.KeyboardEvent
-  -- | ResizeTextArea
   | CalculateTextAreaRows String
   | HistoryUp
   | HistoryDown
