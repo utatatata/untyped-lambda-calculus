@@ -7,7 +7,6 @@ import Test.Spec.Reporter (consoleReporter)
 import Test.Spec.Runner (runSpec)
 import Test.UntypedLambda.Core (testAlphaConversion, testBetaReduction, testCallByValue, testEtaConversion, testFreeVariables)
 import Test.UntypedLambda.Parser (testExpression)
-import Test.UntypedLambda.Repl (testRepl)
 
 main :: Effect Unit
 main = do
@@ -19,4 +18,3 @@ main = do
         testEtaConversion
         testCallByValue
         testExpression
-        testRepl
