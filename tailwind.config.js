@@ -1,7 +1,15 @@
 module.exports = {
   theme: {
-    extend: {}
+    extend: {},
   },
   variants: {},
-  plugins: []
+  plugins: [
+    function({ addVariant, e }) {
+      addVariant('checked', ({ modifySelectors, separator }) => {
+        modifySelectors(({ className }) => {
+          return `.${e(`checked${separator}${className}`)}:checked`
+        })
+      })
+    },
+  ],
 }

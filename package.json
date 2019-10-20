@@ -8,7 +8,9 @@
   "private": true,
   "scripts": {
     "build:ps": "spago bundle-app -m Editor --to public/untyped-lambda-calculus-1.5.0.js",
-    "build:css": "yarn tailwind build assets/css/styles.css -o public/untyped-lambda-calculus-1.5.0.css"
+    "build:css": "yarn tailwind build assets/css/styles.css -o public/untyped-lambda-calculus-1.5.0.css",
+    "build": "yarn build:ps && yarn build:css",
+    "watch": "spago bundle-app -m Editor --to public/untyped-lambda-calculus-1.5.0.js -wl"
   },
   "dependencies": {
     "tailwindcss": "^1.1.2"
