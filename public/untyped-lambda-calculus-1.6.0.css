@@ -11361,6 +11361,12 @@ video {
   z-index: auto;
 }
 
+/* prevent -internal-autofill-selected */
+
+input:-webkit-autofill {
+  transition: background-color 9999s;
+}
+
 @media (min-width: 640px) {
   .sm\:sr-only {
     position: absolute;
