@@ -2,11 +2,13 @@ module Editor where
 
 import Prelude
 import Data.Array (index, length, (:))
+import Data.Display (display)
 import Data.Foldable (for_)
 import Data.Int (round)
 import Data.Maybe (Maybe(..))
 import Data.Newtype (unwrap)
 import Data.String.CodeUnits as S
+import Data.Tuple (Tuple(..))
 import Effect (Effect)
 import Halogen as H
 import Halogen.Aff as HA
@@ -43,6 +45,7 @@ data InputMode
 data Tab
   = REPL
   | Environment
+  | Help
 
 data Action
   = Composition (Array Action)
@@ -252,20 +255,34 @@ main =
                               _ -> []
                       ]
                       [ HH.a
-                          [ HE.onClick \e -> Just $ Composition [ PreventDefault $ WM.toEvent e, SwitchTab REPL, FocusById TextAreaId ]
+                          [ HP.classes [ HH.ClassName "cursor-default" ]
+                          , HE.onClick \e -> Just $ Composition [ PreventDefault $ WM.toEvent e, SwitchTab REPL, FocusById TextAreaId ]
                           ]
                           [ HH.text "REPL" ]
                       ]
                   , HH.li
-                      [ HP.classes
-                          $ case state.tab of
+                      [ HP.classes $ [ HH.ClassName "mr-5" ]
+                          <> case state.tab of
                               Environment -> active
                               _ -> []
                       ]
                       [ HH.a
-                          [ HE.onClick \e -> Just $ Composition [ PreventDefault $ WM.toEvent e, SwitchTab Environment ]
+                          [ HP.classes [ HH.ClassName "cursor-default" ]
+                          , HE.onClick \e -> Just $ Composition [ PreventDefault $ WM.toEvent e, SwitchTab Environment ]
                           ]
                           [ HH.text "Environment" ]
+                      ]
+                  , HH.li
+                      [ HP.classes
+                          $ case state.tab of
+                              Help -> active
+                              _ -> []
+                      ]
+                      [ HH.a
+                          [ HP.classes [ HH.ClassName "cursor-default" ]
+                          , HE.onClick \e -> Just $ Composition [ PreventDefault $ WM.toEvent e, SwitchTab Help ]
+                          ]
+                          [ HH.text "Help" ]
                       ]
                   ]
             , HH.section
@@ -314,6 +331,72 @@ main =
                           else
                             WithoutPrompt
                 ]
+            , HH.section
+                [ HP.classes
+                    $ case state.tab of
+                        Environment -> []
+                        _ -> [ HH.ClassName "hidden" ]
+                ]
+                [ HH.div [ HP.classes [ HH.ClassName "flex", HH.ClassName "flex-col" ] ] $ repl.env
+                    # map \(Tuple name value) ->
+                        HH.div [ HP.classes [ HH.ClassName "break-all" ] ] [ HH.text $ name <> " = " <> display value ]
+                ]
+            , HH.section
+                [ HP.classes
+                    $ case state.tab of
+                        Help -> []
+                        _ -> [ HH.ClassName "hidden" ]
+                ]
+                [ HH.h2 [ HP.classes [ HH.ClassName "text-xl", HH.ClassName "mb-4" ] ] [ HH.text "REPL for The Untyped λ Calculus" ]
+                , HH.section [ HP.classes [ HH.ClassName "mb-8" ] ]
+                    [ HH.h3 [ HP.classes [ HH.ClassName "text-lg", HH.ClassName "mb-2" ] ] [ HH.text "Interpreter Options" ]
+                    , HH.div [ HP.classes [ HH.ClassName "ml-2", HH.ClassName "break-words" ] ] [ HH.text "Type `.help` in REPL for help." ]
+                    ]
+                , HH.section [ HP.classes [ HH.ClassName "mb-8" ] ]
+                    [ HH.h3 [ HP.classes [ HH.ClassName "text-lg", HH.ClassName "mb-2" ] ] [ HH.text "Syntax of λ expression" ]
+                    , HH.div [ HP.classes [ HH.ClassName "flex", HH.ClassName "ml-4", HH.ClassName "mt-2", HH.ClassName "mb-4" ] ]
+                        [ HH.div [ HP.classes [ HH.ClassName "flex", HH.ClassName "flex-col", HH.ClassName "mr-2" ] ]
+                            [ HH.div [] [ HH.text "<expression> ::=" ]
+                            , HH.div [] [ HH.text "<expression> ::=" ]
+                            , HH.div [] [ HH.text "<expression> ::=" ]
+                            ]
+                        , HH.div [ HP.classes [ HH.ClassName "flex", HH.ClassName "flex-col" ] ]
+                            [ HH.div [] [ HH.text "<variable>" ]
+                            , HH.div [] [ HH.text "<lambda abstraction>" ]
+                            , HH.div [] [ HH.text "<application>" ]
+                            ]
+                        ]
+                    , HH.section [ HP.classes [ HH.ClassName "mb-4" ] ]
+                        [ HH.h4 [ HP.classes [ HH.ClassName "mb-2" ] ] [ HH.text "1. Variables" ]
+                        , HH.div [ HP.classes [ HH.ClassName "ml-4", HH.ClassName "mt-2", HH.ClassName "mb-4" ] ]
+                            [ HH.text "<variable> ::= <identifier>" ]
+                        , HH.div [ HP.classes [ HH.ClassName "ml-2", HH.ClassName "break-words" ] ]
+                            [ HH.p [] [ HH.text "<identifier> consists of alphabets, digits, ASCII characters except 'λ', and symbols '!', '@', '#', '$', '%', '^', '&', '*', '-', '_', '+', '|', '<', '>', '/', '?'." ]
+                            ]
+                        ]
+                    , HH.section [ HP.classes [ HH.ClassName "mb-4" ] ]
+                        [ HH.h4 [ HP.classes [ HH.ClassName "mb-2" ] ] [ HH.text "2. Lambda Abstractions" ]
+                        , HH.div [ HP.classes [ HH.ClassName "ml-4", HH.ClassName "mt-2", HH.ClassName "mb-4" ] ]
+                            [ HH.div [] [ HH.text "<lambda abstraction> :: = (λ<identifier>.<expression>)" ]
+                            ]
+                        , HH.div [ HP.classes [ HH.ClassName "ml-2", HH.ClassName "break-words" ] ]
+                            [ HH.p [] [ HH.text "Lambda abstractions are right-associative." ]
+                            , HH.p [] [ HH.text "`(λx.λy.M)` is equivalent to `(λx.(λy.M))`." ]
+                            , HH.p [] [ HH.text "`(λx y.M)` is abbreviation of `(λx.(λy.M))`." ]
+                            ]
+                        ]
+                    , HH.section [ HP.classes [ HH.ClassName "mb-4" ] ]
+                        [ HH.h4 [ HP.classes [ HH.ClassName "mb-2" ] ] [ HH.text "3. Applications" ]
+                        , HH.div [ HP.classes [ HH.ClassName "ml-4", HH.ClassName "mt-2", HH.ClassName "mb-4" ] ]
+                            [ HH.div [] [ HH.text "<application> ::= (<expression> <expression>)" ]
+                            ]
+                        , HH.div [ HP.classes [ HH.ClassName "ml-2", HH.ClassName "break-words" ] ]
+                            [ HH.p [] [ HH.text "Applications are left-associative." ]
+                            , HH.p [] [ HH.text "`(M N L)` is equivalent to `((M N) L)`." ]
+                            ]
+                        ]
+                    ]
+                ]
             ]
         ]
     where
@@ -343,6 +426,7 @@ main =
                         , HH.ClassName "overflow-y-hidden"
                         -- to hide a absolute div below
                         , HH.ClassName "z-10"
+                        , HH.ClassName "break-all"
                         ]
                     , HP.rows state.textAreaRows
                     , HP.autofocus true

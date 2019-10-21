@@ -9,6 +9,7 @@ module UntypedLambda.REPL
 import Prelude
 import Control.Alt ((<|>))
 import Data.Array (index, snoc)
+import Data.Display (display)
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..), maybe)
 import Data.Newtype (class Newtype)
@@ -99,7 +100,7 @@ eval input (REPL repl) = case P.runParser input parser of
             , history =
               repl.history
                 `snoc`
-                  { input, output: Just $ C.display $ C.asExpression value }
+                  { input, output: Just $ display $ C.asExpression value }
             }
   Right (Expression expr) ->
     REPL
@@ -107,7 +108,7 @@ eval input (REPL repl) = case P.runParser input parser of
           { history =
             repl.history
               `snoc`
-                { input, output: Just $ C.display $ C.asExpression $ C.callByValue $ C.withEnvironment repl.env expr }
+                { input, output: Just $ display $ C.asExpression $ C.callByValue $ C.withEnvironment repl.env expr }
           }
   Left error ->
     let
