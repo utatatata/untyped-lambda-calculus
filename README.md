@@ -2,7 +2,7 @@
 
 [Web REPL](https://https://untyped-lambda-calculus.netlify.com/)
 
-# Requirements
+## Requirements
 
 - Node.js v10.16.3 or later
 - Yarn v1.19.1 or later
@@ -13,9 +13,9 @@
 
 - [x] Multilin input
 - [ ] Implement other evaluation strategies: Call by need, Call by name
-- [ ] Display the environment
+- [x] Display the environment
 - [ ] Add an editor page
-- [ ] Add a tab to switch pages (REPL, Environment, Editor)
+- [x] Add a tab to switch pages (REPL, Environment, Editor)
 - [ ] Design for Desktop
 - [ ] Design for Tablet
 - [ ] Reimplement standardLibs as a source code
