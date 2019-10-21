@@ -302,7 +302,7 @@ main =
                           <> case output of
                               Just str ->
                                 [ HH.div
-                                    [ HP.classes [ HH.ClassName "mb-4", HH.ClassName "break-all", HH.ClassName "font-mono" ]
+                                    [ HP.classes [ HH.ClassName "mb-4", HH.ClassName "break-all", HH.ClassName "whitespace-pre-wrap", HH.ClassName "font-mono" ]
                                     ]
                                     [ HH.text str ]
                                 ]

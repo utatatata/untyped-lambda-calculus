@@ -53,6 +53,7 @@ data Result
   | Definition String C.Expression
   | StartMultiline
   | EndMultiline
+  | Help
 
 init :: Environment -> REPL
 init env =
@@ -73,7 +74,7 @@ eval input (REPL repl@{ env: _, history: _, inputMode: Multiline, inputPool }) =
           }
   Left _ -> REPL $ repl { inputPool = inputPool `snoc` input }
   where
-  endMultiline = EndMultiline <$ (P.spaces *> P.string ".end" <* P.eof)
+  endMultiline = EndMultiline <$ (P.spaces *> P.string ".end" <* P.spaces <* P.eof)
 
 eval input (REPL repl) = case P.runParser input parser of
   Right StartMultiline ->
@@ -89,6 +90,22 @@ eval input (REPL repl) = case P.runParser input parser of
             repl.history
               `snoc`
                 { input, output: Just "Error: `.end` can only be used in a multiline mode." }
+          }
+  Right Help ->
+    REPL
+      $ repl
+          { history =
+            repl.history
+              `snoc`
+                { input
+                , output:
+                  Just
+                    """The following commands are available.
+.multi                        Start a multiline mode
+.end                          End a multiline mode
+.help                         Show this help menu
+<identifier> = <expression>   Add a new binding into the Environment. An expression `M` under the Environment `a = b` is equivalent to ((λa.M) b)"""
+                }
           }
   Right (Definition name expr) ->
     let
@@ -132,9 +149,11 @@ eval input (REPL repl) = case P.runParser input parser of
                   { input, output: Just $ "Error: " <> msg <> " near '" <> nearStr <> "'." }
             }
   where
-  startMultiline = StartMultiline <$ (P.spaces *> P.string ".multi" <* P.eof)
+  startMultiline = StartMultiline <$ (P.spaces *> P.string ".multi" <* P.spaces <* P.eof)
 
-  endMultiline = EndMultiline <$ (P.spaces *> P.string ".end" <* P.eof)
+  endMultiline = EndMultiline <$ (P.spaces *> P.string ".end" <* P.spaces <* P.eof)
+
+  help = Help <$ (P.spaces *> P.string ".help" <* P.spaces <* P.eof)
 
   define = do
     _ <- P.spaces
@@ -145,4 +164,4 @@ eval input (REPL repl) = case P.runParser input parser of
 
   _expression = Expression <$> P.expression
 
-  parser = P.try startMultiline <|> P.try endMultiline <|> P.try define <|> _expression
+  parser = P.try startMultiline <|> P.try endMultiline <|> P.try help <|> P.try define <|> _expression

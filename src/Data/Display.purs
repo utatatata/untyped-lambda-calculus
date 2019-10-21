@@ -1,8 +1,7 @@
 module Data.Display
   ( class Display
   , display
-  )
-  where
+  ) where
 
 class Display a where
   display :: a -> String
