@@ -23735,7 +23735,7 @@ var PS = {};
                       env: v.env,
                       history: Data_Array.snoc(v.history)({
                           input: input,
-                          output: new Data_Maybe.Just("The following commands are available.\x0a.multi                        Start a multiline mode\x0a.end                          End a multiline mode\x0a.help                         Show this help menu\x0a<identifier> = <expression>   Add a new binding into the Environment. An expression `M` under the Environment `a = b` is equivalent to ((\u03bba.M) b)")
+                          output: new Data_Maybe.Just("The following commands are available.\x0a\x0a.multi                        Start a multiline mode\x0a.end                          End a multiline mode\x0a.help                         Show this help menu\x0a\x0a<identifier> = <expression>   Add a new binding into the Environment. An expression `M` under the Environment `a = b` is equivalent to ((\u03bba.M) b)")
                       }),
                       inputMode: v.inputMode,
                       inputPool: v.inputPool
@@ -23784,7 +23784,7 @@ var PS = {};
                       inputPool: v.inputPool
                   });
               };
-              throw new Error("Failed pattern match at UntypedLambda.REPL (line 79, column 26 - line 150, column 14): " + [ v1.constructor.name ]);
+              throw new Error("Failed pattern match at UntypedLambda.REPL (line 79, column 26 - line 152, column 14): " + [ v1.constructor.name ]);
           };
           while (!$tco_done) {
               $tco_result = $tco_loop($tco_var_input, $copy_v);

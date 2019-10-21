@@ -101,9 +101,11 @@ eval input (REPL repl) = case P.runParser input parser of
                 , output:
                   Just
                     """The following commands are available.
+
 .multi                        Start a multiline mode
 .end                          End a multiline mode
 .help                         Show this help menu
+
 <identifier> = <expression>   Add a new binding into the Environment. An expression `M` under the Environment `a = b` is equivalent to ((λa.M) b)"""
                 }
           }
