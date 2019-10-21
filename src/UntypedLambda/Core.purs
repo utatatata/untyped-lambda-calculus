@@ -1,7 +1,6 @@
 module UntypedLambda.Core
   ( Identifier
   , Expression(..)
-  , display
   , freeVariables
   , Substitution(..)
   , alphaConversion
@@ -18,6 +17,7 @@ module UntypedLambda.Core
 
 import Prelude
 import Data.Array (filter, union, notElem)
+import Data.Display (class Display, display)
 import Data.Foldable (foldl, foldr)
 import Data.Function (on)
 import Data.Int (decimal, toStringAs)
@@ -43,30 +43,31 @@ instance showExpression :: Show Expression where
   show (LambdaAbstraction x m) = "(LambdaAbstraction " <> show x <> " " <> show m <> ")"
   show (Application x a) = "(Application " <> show x <> " " <> show a <> ")"
 
-display :: Expression -> String
-display = case _ of
-  Variable x -> x
-  -- drop 'λ'
-  LambdaAbstraction bound body@(LambdaAbstraction _ _) -> "λ" <> bound <> " " <> (drop 1 $ display body)
-  LambdaAbstraction bound body -> "λ" <> bound <> "." <> (display body)
-  Application expr arg ->
-    joinWith " "
-      [ case expr of
-          Variable var -> var
-          -- left-associative
-          lambda@(LambdaAbstraction _ _) -> paren $ display lambda
-          -- right-associative
-          app@(Application _ _) -> display app
-      , case arg of
-          Variable var -> var
-          -- left-associative, but it is unable to determin whether "m" in "l m n" is enclosed in parentheses or not in a LL(1) parser.
-          -- It requires a LL(2) parser so "m" in "l m n" is always enclosed in parentheses.
-          lambda@(LambdaAbstraction _ _) -> paren $ display lambda
-          -- right-associative
-          app@(Application _ _) -> paren $ display app
-      ]
-  where
-  paren x = joinWith x [ "(", ")" ]
+instance displayExpression :: Display Expression where
+  display :: Expression -> String
+  display = case _ of
+    Variable x -> x
+    -- drop 'λ'
+    LambdaAbstraction bound body@(LambdaAbstraction _ _) -> "λ" <> bound <> " " <> (drop 1 $ display body)
+    LambdaAbstraction bound body -> "λ" <> bound <> "." <> (display body)
+    Application expr arg ->
+      joinWith " "
+        [ case expr of
+            Variable var -> var
+            -- left-associative
+            lambda@(LambdaAbstraction _ _) -> paren $ display lambda
+            -- right-associative
+            app@(Application _ _) -> display app
+        , case arg of
+            Variable var -> var
+            -- left-associative, but it is unable to determin whether "m" in "l m n" is enclosed in parentheses or not in a LL(1) parser.
+            -- It requires a LL(2) parser so "m" in "l m n" is always enclosed in parentheses.
+            lambda@(LambdaAbstraction _ _) -> paren $ display lambda
+            -- right-associative
+            app@(Application _ _) -> paren $ display app
+        ]
+    where
+    paren x = joinWith x [ "(", ")" ]
 
 freeVariables :: Expression -> Array Identifier
 freeVariables (Variable x) = [ x ]
@@ -108,10 +109,11 @@ betaReduction (LambdaAbstraction bound body) arg = alphaConversion (Substitution
 betaReduction expr arg = Application expr arg
 
 etaConversion :: Identifier -> Expression -> Expression
-etaConversion bound body@(Application expr (Variable var)) = if bound == var && bound `notElem` freeVariables expr then
-  expr
-else
-  LambdaAbstraction bound body
+etaConversion bound body@(Application expr (Variable var)) =
+  if bound == var && bound `notElem` freeVariables expr then
+    expr
+  else
+    LambdaAbstraction bound body
 
 etaConversion bound body = LambdaAbstraction bound body
 
@@ -130,15 +132,18 @@ instance eqValue :: Eq Value where
   eq (VApplication x) (VApplication y) = eq x y
   eq _ _ = false
 
-instance eqVApplication :: Eq VApplication where
-  eq (VIdentApp v x) (VIdentApp w y) = eq v w && eq x y
-  eq (VAppApp f x) (VAppApp g y) = eq f g && eq x y
-  eq _ _ = false
-
 instance showValue :: Show Value where
   show (VVariable id) = "(VVariable " <> show id <> ")"
   show (VLambdaAbstraction x f) = "(VLambdaAbstraction " <> show x <> " " <> show f <> ")"
   show (VApplication x) = "(VApplication " <> show x <> ")"
+
+instance displayValue :: Display Value where
+  display value = display $ asExpression value
+
+instance eqVApplication :: Eq VApplication where
+  eq (VIdentApp v x) (VIdentApp w y) = eq v w && eq x y
+  eq (VAppApp f x) (VAppApp g y) = eq f g && eq x y
+  eq _ _ = false
 
 instance showVApplication :: Show VApplication where
   show (VIdentApp x y) = "(VIdentApp " <> show x <> " " <> show y <> ")"

@@ -7,7 +7,6 @@ module Test.UntypedLambda.Core
   ) where
 
 import Prelude
-import UntypedLambda.Core as Core
 import UntypedLambda.Core (Expression(..), Substitution(..), VApplication(..), Value(..), alphaConversion, betaReduction, callByValue, etaConversion, freeVariables, standardLibs, withEnvironment)
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
