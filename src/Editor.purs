@@ -6,6 +6,7 @@ import Data.Display (display)
 import Data.Foldable (for_)
 import Data.Int (round)
 import Data.Maybe (Maybe(..))
+import Data.MediaType.Common as MediaType
 import Data.Newtype (unwrap)
 import Data.String.CodeUnits as S
 import Data.Tuple (Tuple(..))
@@ -18,13 +19,19 @@ import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Halogen.VDom.Driver as HD
 import UntypedLambda.REPL as R
+import Web.Clipboard.ClipboardEvent as WCE
 import Web.DOM as D
 import Web.DOM.Element as DE
 import Web.DOM.NonElementParentNode as DN
 import Web.Event.Event as WE
+import Web.Event.EventTarget as WET
+import Web.Event.EventTarget.Extra as WETE
 import Web.HTML as WH
 import Web.HTML.CSSStyleDeclaration as WHS
+import Web.HTML.Event.DataTransfer as WHEDT
+import Web.HTML.Event.EventTypes as WHET
 import Web.HTML.HTMLDocument as WHD
+import Web.HTML.HTMLDocument.ExecCommand as WHDE
 import Web.HTML.HTMLElement as WHE
 import Web.HTML.Window as WHW
 import Web.UIEvent.KeyboardEvent as WK
@@ -59,6 +66,7 @@ data Action
   | HistoryDown
   | SwitchTab Tab
   | FocusById Id
+  | CopyToClipboard String
 
 data Id
   = TextAreaId
@@ -67,7 +75,7 @@ data Id
 getString :: Id -> String
 getString (TextAreaId) = "repl-input-textarea-id"
 
-getString (BehindTextAreaId) = "behind-text-area-id"
+getString (BehindTextAreaId) = "behind-textarea-id"
 
 data InputLineMode w i
   = Dummy (HHC.HTML w i)
@@ -185,11 +193,28 @@ main =
         case WHE.fromElement =<< maybeElem of
           Just elem -> WHE.focus elem
           Nothing -> pure unit
+    CopyToClipboard str ->
+      H.liftEffect do
+        doc <- WHW.document =<< WH.window
+        listener <- WET.eventListener $ copyListener str
+        WETE.addEventListenerOnce WHET.copy listener false $ WHD.toEventTarget doc
+        _ <- WHDE.execCommand WHDE.copy doc
+        pure unit
     where
     byId :: Id -> Effect (Maybe D.Element)
     byId id = do
       doc <- WHW.document =<< WH.window
       DN.getElementById (getString id) $ WHD.toNonElementParentNode doc
+
+    copyListener :: String -> WE.Event -> Effect Unit
+    copyListener str event = do
+      doc <- WHW.document =<< WH.window
+      case WCE.clipboardData =<< WCE.fromEvent event of
+        Nothing ->
+          pure unit
+        Just transfer -> do
+          WHEDT.setData MediaType.textPlain str transfer
+          WE.preventDefault event
 
   render state =
     let
@@ -293,7 +318,7 @@ main =
                 ]
                 [ HH.div [ HP.classes [ HH.ClassName "flex", HH.ClassName "flex-col" ] ] $ repl.history
                     # map \({ input, output }) ->
-                        HH.div_
+                        HH.div [ HE.onClick $ const $ Just $ CopyToClipboard input ]
                           $ [ inputLine [] $ Dummy
                                 $ HH.span
                                     [ HP.classes [ HH.ClassName "break-all", HH.ClassName "whitespace-pre-wrap" ] ]
@@ -307,6 +332,7 @@ main =
                                     [ HH.text str ]
                                 ]
                               Nothing -> []
+                -- display input pool at multiline mode
                 , inputLine
                     ( case repl.inputMode of
                         R.Singleline -> [ HH.ClassName "hidden" ]

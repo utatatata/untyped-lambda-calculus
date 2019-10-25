@@ -7,16 +7,15 @@ You can edit this file as you like.
 , dependencies =
     [ "arrays"
     , "console"
-    , "css"
     , "effect"
     , "foldable-traversable"
     , "halogen"
-    , "halogen-css"
     , "lists"
     , "parsing"
     , "psci-support"
     , "spec"
     , "tuples"
+    , "web-clipboard"
     ]
 , packages =
     ./packages.dhall
