@@ -13,6 +13,7 @@
     "deploy:purescript": "node ./scripts/deployPureScript",
     "deploy:css": "node ./scripts/deployCSS",
     "deploy:html": "node ./scripts/deployHTML",
+    "predeploy": "del public && mkdirp public",
     "deploy": "run-p deploy:*"
   },
   "dependencies": {
@@ -20,6 +21,8 @@
   },
   "devDependencies": {
     "autoprefixer": "^9.7.0",
+    "del-cli": "^3.0.0",
+    "mkdirp": "^0.5.1",
     "npm-run-all": "^4.1.5",
     "parcel-bundler": "^1.12.4",
     "tailwind": "^4.0.0"
