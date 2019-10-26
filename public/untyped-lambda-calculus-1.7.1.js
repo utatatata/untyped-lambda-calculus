@@ -23653,8 +23653,7 @@ var PS = {};
   var Data_Functor = $PS["Data.Functor"];
   var Data_Int = $PS["Data.Int"];
   var Data_String_CodePoints = $PS["Data.String.CodePoints"];
-  var Data_String_Common = $PS["Data.String.Common"];
-  var Data_Tuple = $PS["Data.Tuple"];                
+  var Data_String_Common = $PS["Data.String.Common"];                
   var VVariable = (function () {
       function VVariable(value0) {
           this.value0 = value0;
@@ -23754,7 +23753,6 @@ var PS = {};
       };
       return Substitution;
   })();
-  var standardLibs = [ Data_Tuple.Tuple.create("zero")(VLambdaAbstraction.create("f")(VLambdaAbstraction.create("x")(new VVariable("x")))), Data_Tuple.Tuple.create("one")(VLambdaAbstraction.create("f")(VLambdaAbstraction.create("x")(VApplication.create(VIdentApp.create("f")(new VVariable("x")))))), Data_Tuple.Tuple.create("two")(VLambdaAbstraction.create("f")(VLambdaAbstraction.create("x")(VApplication.create(VIdentApp.create("f")(VApplication.create(VIdentApp.create("f")(new VVariable("x")))))))), Data_Tuple.Tuple.create("three")(VLambdaAbstraction.create("f")(VLambdaAbstraction.create("x")(VApplication.create(VIdentApp.create("f")(VApplication.create(VIdentApp.create("f")(VApplication.create(VIdentApp.create("f")(new VVariable("x")))))))))), Data_Tuple.Tuple.create("succ")(VLambdaAbstraction.create("n")(VLambdaAbstraction.create("f")(VLambdaAbstraction.create("x")(VApplication.create(VIdentApp.create("f")(VApplication.create(VAppApp.create(VIdentApp.create("n")(new VVariable("f")))(new VVariable("x"))))))))), Data_Tuple.Tuple.create("plus")(VLambdaAbstraction.create("m")(VLambdaAbstraction.create("n")(VLambdaAbstraction.create("f")(VLambdaAbstraction.create("x")(VApplication.create(VAppApp.create(VIdentApp.create("m")(new VVariable("f")))(VApplication.create(VAppApp.create(VIdentApp.create("n")(new VVariable("f")))(new VVariable("x")))))))))), Data_Tuple.Tuple.create("mul")(VLambdaAbstraction.create("m")(VLambdaAbstraction.create("n")(VLambdaAbstraction.create("f")(VApplication.create(VIdentApp.create("m")(VApplication.create(VIdentApp.create("f")(new VVariable("n"))))))))), Data_Tuple.Tuple.create("pow")(VLambdaAbstraction.create("b")(VLambdaAbstraction.create("e")(VApplication.create(VIdentApp.create("e")(new VVariable("b")))))), Data_Tuple.Tuple.create("pred")(VLambdaAbstraction.create("n")(VLambdaAbstraction.create("f")(VLambdaAbstraction.create("x")(VApplication.create(VAppApp.create(VAppApp.create(VIdentApp.create("n")(VLambdaAbstraction.create("g")(VLambdaAbstraction.create("h")(VApplication.create(VIdentApp.create("h")(VApplication.create(VIdentApp.create("g")(new VVariable("f")))))))))(VLambdaAbstraction.create("u")(new VVariable("x"))))(VLambdaAbstraction.create("u")(new VVariable("u")))))))), Data_Tuple.Tuple.create("sub")(VLambdaAbstraction.create("m")(VLambdaAbstraction.create("n")(VApplication.create(VAppApp.create(VIdentApp.create("n")(VLambdaAbstraction.create("l")(VLambdaAbstraction.create("f")(VLambdaAbstraction.create("x")(VApplication.create(VAppApp.create(VAppApp.create(VIdentApp.create("l")(VLambdaAbstraction.create("g")(VLambdaAbstraction.create("h")(VApplication.create(VIdentApp.create("h")(VApplication.create(VIdentApp.create("g")(new VVariable("f")))))))))(VLambdaAbstraction.create("u")(new VVariable("x"))))(VLambdaAbstraction.create("u")(new VVariable("u")))))))))(new VVariable("m")))))) ];
   var freeVariables = function (v) {
       if (v instanceof Variable) {
           return [ v.value0 ];
@@ -23765,7 +23763,7 @@ var PS = {};
       if (v instanceof Application) {
           return Data_Function.on(Data_Array.union(Data_Eq.eqString))(freeVariables)(v.value0)(v.value1);
       };
-      throw new Error("Failed pattern match at UntypedLambda.Core (line 72, column 1 - line 72, column 48): " + [ v.constructor.name ]);
+      throw new Error("Failed pattern match at UntypedLambda.Core (line 71, column 1 - line 71, column 48): " + [ v.constructor.name ]);
   }; 
   var eqExpression = new Data_Eq.Eq(function (v) {
       return function (v1) {
@@ -23806,7 +23804,7 @@ var PS = {};
                   if (v.value0 instanceof Application) {
                       return Data_Display.display(displayExpression)(v.value0);
                   };
-                  throw new Error("Failed pattern match at UntypedLambda.Core (line 55, column 11 - line 60, column 49): " + [ v.value0.constructor.name ]);
+                  throw new Error("Failed pattern match at UntypedLambda.Core (line 54, column 11 - line 59, column 49): " + [ v.value0.constructor.name ]);
               })(), (function () {
                   if (v.value1 instanceof Variable) {
                       return v.value1.value0;
@@ -23817,10 +23815,10 @@ var PS = {};
                   if (v.value1 instanceof Application) {
                       return paren(Data_Display.display(displayExpression)(v.value1));
                   };
-                  throw new Error("Failed pattern match at UntypedLambda.Core (line 61, column 11 - line 67, column 57): " + [ v.value1.constructor.name ]);
+                  throw new Error("Failed pattern match at UntypedLambda.Core (line 60, column 11 - line 66, column 57): " + [ v.value1.constructor.name ]);
               })() ]);
           };
-          throw new Error("Failed pattern match at UntypedLambda.Core (line 48, column 13 - line 68, column 10): " + [ v.constructor.name ]);
+          throw new Error("Failed pattern match at UntypedLambda.Core (line 47, column 13 - line 67, column 10): " + [ v.constructor.name ]);
       };
   })());
   var asExpression = function (v) {
@@ -23836,7 +23834,7 @@ var PS = {};
       if (v instanceof VApplication && v.value0 instanceof VAppApp) {
           return Data_Function.on(Application.create)(asExpression)(new VApplication(v.value0.value0))(v.value0.value1);
       };
-      throw new Error("Failed pattern match at UntypedLambda.Core (line 152, column 1 - line 152, column 36): " + [ v.constructor.name ]);
+      throw new Error("Failed pattern match at UntypedLambda.Core (line 151, column 1 - line 151, column 36): " + [ v.constructor.name ]);
   };
   var displayValue = new Data_Display.Display(function (value) {
       return Data_Display.display(displayExpression)(asExpression(value));
@@ -23901,7 +23899,7 @@ var PS = {};
           if (v1 instanceof Application) {
               return Data_Function.on(Application.create)(alphaConversion(v))(v1.value0)(v1.value1);
           };
-          throw new Error("Failed pattern match at UntypedLambda.Core (line 82, column 1 - line 82, column 60): " + [ v.constructor.name, v1.constructor.name ]);
+          throw new Error("Failed pattern match at UntypedLambda.Core (line 81, column 1 - line 81, column 60): " + [ v.constructor.name, v1.constructor.name ]);
       };
   };
   var betaReduction = function (v) {
@@ -23930,10 +23928,10 @@ var PS = {};
               if (v1 instanceof VApplication) {
                   return VApplication.create(VAppApp.create(v1.value0)(callByValue(v.value1)));
               };
-              throw new Error("Failed pattern match at UntypedLambda.Core (line 168, column 7 - line 171, column 75): " + [ v1.constructor.name ]);
+              throw new Error("Failed pattern match at UntypedLambda.Core (line 167, column 7 - line 170, column 75): " + [ v1.constructor.name ]);
           })(callByValue(v.value0));
       };
-      throw new Error("Failed pattern match at UntypedLambda.Core (line 161, column 1 - line 161, column 35): " + [ v.constructor.name ]);
+      throw new Error("Failed pattern match at UntypedLambda.Core (line 160, column 1 - line 160, column 35): " + [ v.constructor.name ]);
   };
   exports["Variable"] = Variable;
   exports["LambdaAbstraction"] = LambdaAbstraction;
@@ -23941,7 +23939,6 @@ var PS = {};
   exports["asExpression"] = asExpression;
   exports["callByValue"] = callByValue;
   exports["withEnvironment"] = withEnvironment;
-  exports["standardLibs"] = standardLibs;
   exports["eqExpression"] = eqExpression;
   exports["displayExpression"] = displayExpression;
   exports["displayValue"] = displayValue;
@@ -24428,6 +24425,13 @@ var PS = {};
   exports["spaces"] = spaces;
 })(PS);
 (function($PS) {
+  "use strict";
+  $PS["UntypedLambda.Prime"] = $PS["UntypedLambda.Prime"] || {};
+  var exports = $PS["UntypedLambda.Prime"];
+  var prime = "zero  = \u03bbf x.x\x0aone   = \u03bbf x.f x\x0atwo   = \u03bbf x.f (f x)\x0athree = \u03bbf x.f (f (f x))\x0afour  = \u03bbf x.f (f (f (f x)))\x0afive  = \u03bbf x.f (f (f (f (f x))))\x0asix   = \u03bbf x.f (f (f (f (f (f x)))))\x0aseven = \u03bbf x.f (f (f (f (f (f (f x))))))\x0aeight = \u03bbf x.f (f (f (f (f (f (f (f x)))))))\x0anine  = \u03bbf x.f (f (f (f (f (f (f (f (f x))))))))\x0aten   = \u03bbf x.f (f (f (f (f (f (f (f (f (f x)))))))))\x0asucc = \u03bbn f x.f (n f x)\x0aplus = \u03bbm n f x.m f (n f x)\x0amult = \u03bbm n f.m (n f)\x0apow  = \u03bbb e.e b\x0apred = \u03bbn f x.n (\u03bbg h.h (g f)) (\u03bbu.x) (\u03bbu.u)\x0asub  = \u03bbm n.n pred m";
+  exports["prime"] = prime;
+})(PS);
+(function($PS) {
   // Generated by purs version 0.13.3
   "use strict";
   $PS["UntypedLambda.REPL"] = $PS["UntypedLambda.REPL"] || {};
@@ -24439,6 +24443,8 @@ var PS = {};
   var Data_Array = $PS["Data.Array"];
   var Data_Display = $PS["Data.Display"];
   var Data_Either = $PS["Data.Either"];
+  var Data_Foldable = $PS["Data.Foldable"];
+  var Data_Function = $PS["Data.Function"];
   var Data_Functor = $PS["Data.Functor"];
   var Data_Identity = $PS["Data.Identity"];
   var Data_Maybe = $PS["Data.Maybe"];
@@ -24450,7 +24456,8 @@ var PS = {};
   var Text_Parsing_Parser_Combinators = $PS["Text.Parsing.Parser.Combinators"];
   var Text_Parsing_Parser_String = $PS["Text.Parsing.Parser.String"];
   var UntypedLambda_Core = $PS["UntypedLambda.Core"];
-  var UntypedLambda_Parser = $PS["UntypedLambda.Parser"];                
+  var UntypedLambda_Parser = $PS["UntypedLambda.Parser"];
+  var UntypedLambda_Prime = $PS["UntypedLambda.Prime"];                
   var Expression = (function () {
       function Expression(value0) {
           this.value0 = value0;
@@ -24513,14 +24520,6 @@ var PS = {};
   var newtypeREPL = new Data_Newtype.Newtype(function (n) {
       return n;
   }, REPL);
-  var init = function (env) {
-      return REPL({
-          env: env,
-          history: [  ],
-          inputMode: Singleline.value,
-          inputPool: [  ]
-      });
-  };
   var $$eval = function ($copy_input) {
       return function ($copy_v) {
           var $tco_var_input = $copy_input;
@@ -24549,7 +24548,7 @@ var PS = {};
                           inputPool: Data_Array.snoc(v.inputPool)(input)
                       });
                   };
-                  throw new Error("Failed pattern match at UntypedLambda.REPL (line 68, column 82 - line 75, column 63): " + [ v1.constructor.name ]);
+                  throw new Error("Failed pattern match at UntypedLambda.REPL (line 80, column 82 - line 87, column 63): " + [ v1.constructor.name ]);
               };
               var startMultiline = Data_Functor.voidRight(Text_Parsing_Parser.functorParserT(Data_Identity.functorIdentity))(StartMultiline.value)(Control_Apply.applyFirst(Text_Parsing_Parser.applyParserT(Data_Identity.monadIdentity))(Control_Apply.applyFirst(Text_Parsing_Parser.applyParserT(Data_Identity.monadIdentity))(Control_Apply.applySecond(Text_Parsing_Parser.applyParserT(Data_Identity.monadIdentity))(UntypedLambda_Parser.spaces(Data_Identity.monadIdentity))(Text_Parsing_Parser_String.string(Text_Parsing_Parser_String.stringLikeString)(Data_Identity.monadIdentity)(".multi")))(UntypedLambda_Parser.spaces(Data_Identity.monadIdentity)))(Text_Parsing_Parser_String.eof(Text_Parsing_Parser_String.stringLikeString)(Data_Identity.monadIdentity)));
               var help = Data_Functor.voidRight(Text_Parsing_Parser.functorParserT(Data_Identity.functorIdentity))(Help.value)(Control_Apply.applyFirst(Text_Parsing_Parser.applyParserT(Data_Identity.monadIdentity))(Control_Apply.applyFirst(Text_Parsing_Parser.applyParserT(Data_Identity.monadIdentity))(Control_Apply.applySecond(Text_Parsing_Parser.applyParserT(Data_Identity.monadIdentity))(UntypedLambda_Parser.spaces(Data_Identity.monadIdentity))(Text_Parsing_Parser_String.string(Text_Parsing_Parser_String.stringLikeString)(Data_Identity.monadIdentity)(".help")))(UntypedLambda_Parser.spaces(Data_Identity.monadIdentity)))(Text_Parsing_Parser_String.eof(Text_Parsing_Parser_String.stringLikeString)(Data_Identity.monadIdentity)));
@@ -24645,7 +24644,7 @@ var PS = {};
                       inputPool: v.inputPool
                   });
               };
-              throw new Error("Failed pattern match at UntypedLambda.REPL (line 79, column 26 - line 152, column 14): " + [ v1.constructor.name ]);
+              throw new Error("Failed pattern match at UntypedLambda.REPL (line 91, column 26 - line 164, column 14): " + [ v1.constructor.name ]);
           };
           while (!$tco_done) {
               $tco_result = $tco_loop($tco_var_input, $copy_v);
@@ -24653,6 +24652,20 @@ var PS = {};
           return $tco_result;
       };
   };
+  var init = (function () {
+      var v = Data_Foldable.foldl(Data_Foldable.foldableArray)(Data_Function.flip($$eval))({
+          env: [  ],
+          history: [  ],
+          inputMode: Singleline.value,
+          inputPool: [  ]
+      })(Data_String_Common.split("\x0a")(UntypedLambda_Prime.prime));
+      return {
+          env: v.env,
+          history: [  ],
+          inputMode: Singleline.value,
+          inputPool: [  ]
+      };
+  })();
   exports["Singleline"] = Singleline;
   exports["Multiline"] = Multiline;
   exports["init"] = init;
@@ -25335,7 +25348,7 @@ var PS = {};
               input: "",
               inputMode: Inputting.value,
               textAreaRows: 1,
-              repl: UntypedLambda_REPL.init(UntypedLambda_Core.standardLibs),
+              repl: UntypedLambda_REPL.init,
               tab: REPL.value,
               popupState: Hidden.value
           };
