@@ -120,7 +120,7 @@ main =
     { input: ""
     , inputMode: Inputting
     , textAreaRows: 1
-    , repl: R.init R.standardLibs
+    , repl: R.init
     , tab: REPL
     , popupState: Hidden
     }
