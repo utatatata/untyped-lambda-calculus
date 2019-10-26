@@ -17,6 +17,7 @@ You can edit this file as you like.
     , "psci-support"
     , "spec"
     , "tuples"
+    , "web-clipboard"
     ]
 , packages =
     ./packages.dhall

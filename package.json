@@ -1,21 +1,30 @@
 {
   "name": "untyped-lambda-calculus",
-  "version": "1.6.1",
+  "version": "1.7.0",
   "description": "A PureScript implementation of the untyped lambda calculus",
   "repository": "git@github.com:utatatata/untyped-lambda-calculus.git",
   "author": "utakuma <i@utakuma.info>",
   "license": "MIT",
   "private": true,
   "scripts": {
-    "build:ps": "spago bundle-app -m Editor --to public/untyped-lambda-calculus-1.6.1.js",
-    "build:css": "yarn tailwind build assets/css/styles.css -o public/untyped-lambda-calculus-1.6.1.css",
-    "build": "yarn build:ps && yarn build:css",
-    "watch": "spago bundle-app -m Editor --to public/untyped-lambda-calculus-1.6.1.js -wl"
+    "watch:build": "spago build -wl",
+    "watch:bundle": "parcel serve dev/index.html",
+    "watch": "run-p watch:*",
+    "deploy:purescript": "node ./scripts/deployPureScript",
+    "deploy:css": "node ./scripts/deployCSS",
+    "deploy:html": "node ./scripts/deployHTML",
+    "predeploy": "del public && mkdirp public",
+    "deploy": "run-p deploy:*"
   },
   "dependencies": {
     "tailwindcss": "^1.1.2"
   },
   "devDependencies": {
+    "autoprefixer": "^9.7.0",
+    "del-cli": "^3.0.0",
+    "mkdirp": "^0.5.1",
+    "npm-run-all": "^4.1.5",
+    "parcel-bundler": "^1.12.4",
     "tailwind": "^4.0.0"
   }
 }
