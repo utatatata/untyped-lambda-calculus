@@ -11,6 +11,7 @@ import Control.Alt ((<|>))
 import Data.Array (index, snoc)
 import Data.Display (display)
 import Data.Either (Either(..))
+import Data.Foldable (foldl)
 import Data.Maybe (Maybe(..), maybe)
 import Data.Newtype (class Newtype)
 import Data.String (Pattern(..), joinWith, split, take)
@@ -19,9 +20,10 @@ import Text.Parsing.Parser (parseErrorMessage, parseErrorPosition, runParser) as
 import Text.Parsing.Parser.Combinators (try) as P
 import Text.Parsing.Parser.Pos (Position(..)) as P
 import Text.Parsing.Parser.String (eof, string) as P
-import UntypedLambda.Core (Environment, standardLibs)
+import UntypedLambda.Core (Environment)
 import UntypedLambda.Core as C
 import UntypedLambda.Parser (expression, identifier, spaces) as P
+import UntypedLambda.Prime as Prime
 
 newtype REPL
   = REPL
@@ -55,14 +57,24 @@ data Result
   | EndMultiline
   | Help
 
-init :: Environment -> REPL
-init env =
-  REPL
-    $ { env: env
-      , history: []
-      , inputMode: Singleline
-      , inputPool: []
-      }
+init :: REPL
+init = REPL
+  { env: _init.env
+  , history: []
+  , inputMode: Singleline
+  , inputPool: []
+  }
+  where
+  REPL _init = Prime.prime
+    # split (Pattern "\n")
+    # foldl (flip eval)
+      ( REPL
+          { env: []
+          , history: []
+          , inputMode: Singleline
+          , inputPool: []
+          }
+      )
 
 eval :: String -> REPL -> REPL
 eval input (REPL repl@{ env: _, history: _, inputMode: Multiline, inputPool }) = case P.runParser input endMultiline of

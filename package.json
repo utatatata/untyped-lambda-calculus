@@ -7,6 +7,8 @@
   "license": "MIT",
   "private": true,
   "scripts": {
+    "test": "spago test",
+    "build": "spago build",
     "watch:build": "spago build -wl",
     "watch:bundle": "parcel serve dev/index.html",
     "watch": "run-p watch:*",

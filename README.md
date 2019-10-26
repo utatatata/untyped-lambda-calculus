@@ -18,5 +18,5 @@
 - [x] Add a tab to switch pages (REPL, Environment, Editor)
 - [ ] Design for Desktop
 - [ ] Design for Tablet
-- [ ] Reimplement standardLibs as a source code
+- [x] Implement Prime as a source code
 - [x] Add a history select/copy popup for Smartphones

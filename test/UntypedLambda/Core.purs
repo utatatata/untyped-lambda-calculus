@@ -7,9 +7,10 @@ module Test.UntypedLambda.Core
   ) where
 
 import Prelude
-import UntypedLambda.Core (Expression(..), Substitution(..), VApplication(..), Value(..), alphaConversion, betaReduction, callByValue, etaConversion, freeVariables, standardLibs, withEnvironment)
+import Data.Tuple (Tuple(..))
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
+import UntypedLambda.Core (Expression(..), Substitution(..), VApplication(..), Value(..), alphaConversion, betaReduction, callByValue, etaConversion, freeVariables, withEnvironment)
 
 testFreeVariables :: Spec Unit
 testFreeVariables =
@@ -567,13 +568,72 @@ testCallByValue =
         eval (Application (Variable "pred") $ Variable "one") `shouldEqual` vzero
       it "pred two ≡ one" do
         eval (Application (Variable "pred") $ Variable "two") `shouldEqual` vone
-      it "sub zero zero ≡ zero" do
-        eval (Application (Application (Variable "sub") $ Variable "zero") $ Variable "zero") `shouldEqual` vzero
   where
+  libs =
+    [ Tuple "zero"
+        $ VLambdaAbstraction "f"
+        $ VLambdaAbstraction "x"
+        $ VVariable "x"
+    , Tuple "one"
+        $ VLambdaAbstraction "f"
+        $ VLambdaAbstraction "x"
+        $ VApplication
+        $ VIdentApp "f"
+        $ VVariable "x"
+    , Tuple "two"
+        $ VLambdaAbstraction "f"
+        $ VLambdaAbstraction "x"
+        $ VApplication
+        $ VIdentApp "f"
+        $ VApplication
+        $ VIdentApp "f"
+        $ VVariable "x"
+    , Tuple "succ"
+        $ VLambdaAbstraction "n"
+        $ VLambdaAbstraction "f"
+        $ VLambdaAbstraction "x"
+        $ VApplication
+        $ VIdentApp "f"
+        $ VApplication
+        $ VAppApp (VIdentApp "n" $ VVariable "f")
+        $ VVariable "x"
+    , Tuple "plus"
+        $ VLambdaAbstraction "m"
+        $ VLambdaAbstraction "n"
+        $ VLambdaAbstraction "f"
+        $ VLambdaAbstraction "x"
+        $ VApplication
+        $ VAppApp (VIdentApp "m" $ VVariable "f")
+        $ VApplication
+        $ VAppApp (VIdentApp "n" $ VVariable "f")
+        $ VVariable "x"
+    , Tuple "pred"
+        $ VLambdaAbstraction "n"
+        $ VLambdaAbstraction "f"
+        $ VLambdaAbstraction "x"
+        $ VApplication
+        $ VAppApp
+            ( VAppApp
+                ( VIdentApp "n"
+                    $ VLambdaAbstraction "g"
+                    $ VLambdaAbstraction "h"
+                    $ VApplication
+                    $ VIdentApp "h"
+                    $ VApplication
+                    $ VIdentApp "g"
+                    $ VVariable "f"
+                )
+                $ VLambdaAbstraction "u"
+                $ VVariable "x"
+            )
+        $ VLambdaAbstraction "u"
+        $ VVariable "u"
+    ]
+
   vzero = VLambdaAbstraction "f" (VLambdaAbstraction "x" (VVariable "x"))
 
   vone = VLambdaAbstraction "f" (VLambdaAbstraction "x" (VApplication $ VIdentApp "f" (VVariable "x")))
 
   vtwo = VLambdaAbstraction "f" (VLambdaAbstraction "x" (VApplication $ VIdentApp "f" (VApplication $ VIdentApp "f" (VVariable "x"))))
 
-  eval expr = callByValue $ withEnvironment standardLibs expr
+  eval expr = callByValue $ withEnvironment libs expr
