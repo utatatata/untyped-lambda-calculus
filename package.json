@@ -7,15 +7,21 @@
   "license": "MIT",
   "private": true,
   "scripts": {
-    "build:ps": "spago bundle-app -m Editor --to public/untyped-lambda-calculus-1.6.1.js",
-    "build:css": "yarn tailwind build assets/css/styles.css -o public/untyped-lambda-calculus-1.6.1.css",
-    "build": "yarn build:ps && yarn build:css",
-    "watch": "spago bundle-app -m Editor --to public/untyped-lambda-calculus-1.6.1.js -wl"
+    "watch:build": "spago build -wl",
+    "watch:bundle": "parcel serve dev/index.html",
+    "watch": "run-p watch:*",
+    "deploy:purescript": "node ./scripts/deployPureScript",
+    "deploy:css": "node ./scripts/deployCSS",
+    "deploy:html": "node ./scripts/deployHTML",
+    "deploy": "run-p deploy:*"
   },
   "dependencies": {
     "tailwindcss": "^1.1.2"
   },
   "devDependencies": {
+    "autoprefixer": "^9.7.0",
+    "npm-run-all": "^4.1.5",
+    "parcel-bundler": "^1.12.4",
     "tailwind": "^4.0.0"
   }
 }
