@@ -13,6 +13,7 @@
 
 - [x] Multilin input
 - [ ] Implement other evaluation strategies: Call by need, Call by name
+- [ ] Repair Call by value
 - [x] Display the environment
 - [ ] Add an editor page
 - [x] Add a tab to switch pages (REPL, Environment, Editor)
