@@ -19,4 +19,4 @@
 - [ ] Design for Desktop
 - [ ] Design for Tablet
 - [ ] Reimplement standardLibs as a source code
-- [ ] Add history up/down buttons for a smartphone
+- [x] Add a history select/copy popup for Smartphones
