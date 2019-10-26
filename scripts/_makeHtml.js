@@ -1,8 +1,8 @@
-const { writeFile } = require('fs')
-const { promisify } = require('util')
-const writeFileP = promisify(writeFile)
+const { writeFile } = require("fs");
+const { promisify } = require("util");
+const writeFileP = promisify(writeFile);
 
-module.exports = ({ path, css = '', js = '', body = '' }) => async () => {
+module.exports = ({ path, css = "", js = "", body = "" }) => async () => {
   const html = `<!DOCTYPE html>
 <html>
   <head>
@@ -11,17 +11,17 @@ module.exports = ({ path, css = '', js = '', body = '' }) => async () => {
     <title>REPL for The Untyped λ Calculus</title>
     <link href="${css}" rel="stylesheet" />
   </head>
-  <body class="bg-gray-900 text-white text-base font-sans">
+  <body>
     <script src="${js}"></script>${body}
   </body>
-</html>`
-  console.log(`Write HTML to ${path}...`)
+</html>`;
+  console.log(`Write HTML to ${path}...`);
   try {
-    await writeFileP(path, html, 'utf8')
-    console.log('Done.')
-    return true
+    await writeFileP(path, html, "utf8");
+    console.log("Done.");
+    return true;
   } catch (e) {
-    console.log(e)
-    return false
+    console.log(e);
+    return false;
   }
-}
+};

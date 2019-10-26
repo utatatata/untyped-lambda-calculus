@@ -1,6 +1,8 @@
 module Editor where
 
+import Effect.Console
 import Prelude
+import CSS as CSS
 import Data.Array (index, length, (:))
 import Data.Display (display)
 import Data.Foldable (for_)
@@ -11,9 +13,11 @@ import Data.Newtype (unwrap)
 import Data.String.CodeUnits as S
 import Data.Tuple (Tuple(..))
 import Effect (Effect)
+import Effect.Console as Console
 import Halogen as H
 import Halogen.Aff as HA
 import Halogen.HTML as HH
+import Halogen.HTML.CSS (style) as CSS
 import Halogen.HTML.Core as HHC
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
@@ -43,6 +47,7 @@ type State
     , textAreaRows :: Int
     , repl :: R.REPL
     , tab :: Tab
+    , popupState :: SelectOrCopyPopupState
     }
 
 data InputMode
@@ -54,9 +59,14 @@ data Tab
   | Environment
   | Help
 
+data SelectOrCopyPopupState
+  = Hidden
+  | Display String
+
 data Action
   = Composition (Array Action)
   | PreventDefault WE.Event
+  | StopPropagation WE.Event
   | Input String
   | Eval
   | KeyDown WK.KeyboardEvent
@@ -66,6 +76,9 @@ data Action
   | HistoryDown
   | SwitchTab Tab
   | FocusById Id
+  | DisplaySelectOrCopyPopup String
+  | HiddenSelectOrCopyPopup
+  | Select String
   | CopyToClipboard String
 
 data Id
@@ -106,6 +119,7 @@ main =
     , textAreaRows: 1
     , repl: R.init R.standardLibs
     , tab: REPL
+    , popupState: Hidden
     }
 
   handleAction = case _ of
@@ -113,10 +127,12 @@ main =
       for_ actions \a ->
         handleAction a
     PreventDefault e -> H.liftEffect $ WE.preventDefault e
+    StopPropagation e -> H.liftEffect $ WE.stopPropagation e
     Input input -> do
       H.modify_ _ { input = input, inputMode = Inputting }
       handleAction $ CalculateTextAreaRows input
     Eval -> do
+      handleAction HiddenSelectOrCopyPopup
       { input, repl } <- H.get
       H.modify_
         _
@@ -159,6 +175,7 @@ main =
         Nothing -> pure unit
         Just rows -> H.modify_ _ { textAreaRows = rows }
     HistoryUp -> do
+      handleAction HiddenSelectOrCopyPopup
       { inputMode } <- H.get
       ( let
           n = case inputMode of
@@ -175,6 +192,7 @@ main =
                 handleAction $ CalculateTextAreaRows input
       )
     HistoryDown -> do
+      handleAction HiddenSelectOrCopyPopup
       { inputMode } <- H.get
       case inputMode of
         Inputting -> pure unit
@@ -186,20 +204,32 @@ main =
             Just { input, output: _ } -> do
               H.modify_ _ { input = input, inputMode = SelectingHistory $ n - 1 }
               handleAction $ CalculateTextAreaRows input
-    SwitchTab tab -> H.modify_ _ { tab = tab }
-    FocusById id ->
-      H.liftEffect do
-        maybeElem <- byId id
-        case WHE.fromElement =<< maybeElem of
-          Just elem -> WHE.focus elem
-          Nothing -> pure unit
-    CopyToClipboard str ->
-      H.liftEffect do
-        doc <- WHW.document =<< WH.window
-        listener <- WET.eventListener $ copyListener str
-        WETE.addEventListenerOnce WHET.copy listener false $ WHD.toEventTarget doc
-        _ <- WHDE.execCommand WHDE.copy doc
-        pure unit
+    SwitchTab tab -> do
+      handleAction HiddenSelectOrCopyPopup
+      H.modify_ _ { tab = tab }
+    FocusById id -> do
+      handleAction HiddenSelectOrCopyPopup
+      H.liftEffect
+        $ do
+            maybeElem <- byId id
+            case WHE.fromElement =<< maybeElem of
+              Just elem -> WHE.focus elem
+              Nothing -> pure unit
+    DisplaySelectOrCopyPopup selectOrCopyStr -> H.modify_ _ { popupState = Display selectOrCopyStr }
+    HiddenSelectOrCopyPopup -> H.modify_ _ { popupState = Hidden }
+    Select selectedStr -> do
+      handleAction HiddenSelectOrCopyPopup
+      H.modify_ _ { input = selectedStr, inputMode = Inputting }
+      handleAction $ CalculateTextAreaRows selectedStr
+    CopyToClipboard str -> do
+      handleAction HiddenSelectOrCopyPopup
+      H.liftEffect
+        $ do
+            doc <- WHW.document =<< WH.window
+            listener <- WET.eventListener $ copyListener str
+            WETE.addEventListenerOnce WHET.copy listener false $ WHD.toEventTarget doc
+            _ <- WHDE.execCommand WHDE.copy doc
+            pure unit
     where
     byId :: Id -> Effect (Maybe D.Element)
     byId id = do
@@ -210,8 +240,7 @@ main =
     copyListener str event = do
       doc <- WHW.document =<< WH.window
       case WCE.clipboardData =<< WCE.fromEvent event of
-        Nothing ->
-          pure unit
+        Nothing -> pure unit
         Just transfer -> do
           WHEDT.setData MediaType.textPlain str transfer
           WE.preventDefault event
@@ -220,8 +249,18 @@ main =
     let
       repl = unwrap state.repl
     in
-      HH.div_
-        [ HH.header [ HP.classes [ HH.ClassName "flex", HH.ClassName "justify-between", HH.ClassName "my-4" ] ]
+      HH.div
+        [ HP.classes
+            [ HH.ClassName "min-w-full"
+            , HH.ClassName "min-h-full"
+            , HH.ClassName "bg-gray-900"
+            , HH.ClassName "text-white"
+            , HH.ClassName "text-base"
+            , HH.ClassName "font-sans"
+            ]
+        , HE.onClick \me -> let e = WM.toEvent me in Just $ Composition [ PreventDefault e, StopPropagation e, HiddenSelectOrCopyPopup ]
+        ]
+        [ HH.header [ HP.classes [ HH.ClassName "flex", HH.ClassName "justify-between", HH.ClassName "py-4" ] ]
             [ HH.h1 [ HP.classes [ HH.ClassName "mx-6", HH.ClassName "text-3xl" ] ]
                 [ HH.span
                     [ HP.classes
@@ -281,7 +320,7 @@ main =
                       ]
                       [ HH.a
                           [ HP.classes [ HH.ClassName "cursor-default" ]
-                          , HE.onClick \e -> Just $ Composition [ PreventDefault $ WM.toEvent e, SwitchTab REPL, FocusById TextAreaId ]
+                          , HE.onClick \me -> let e = WM.toEvent me in Just $ Composition [ PreventDefault e, StopPropagation e, SwitchTab REPL, FocusById TextAreaId ]
                           ]
                           [ HH.text "REPL" ]
                       ]
@@ -293,7 +332,7 @@ main =
                       ]
                       [ HH.a
                           [ HP.classes [ HH.ClassName "cursor-default" ]
-                          , HE.onClick \e -> Just $ Composition [ PreventDefault $ WM.toEvent e, SwitchTab Environment ]
+                          , HE.onClick \me -> let e = WM.toEvent me in Just $ Composition [ PreventDefault e, StopPropagation e, SwitchTab Environment ]
                           ]
                           [ HH.text "Environment" ]
                       ]
@@ -305,7 +344,7 @@ main =
                       ]
                       [ HH.a
                           [ HP.classes [ HH.ClassName "cursor-default" ]
-                          , HE.onClick \e -> Just $ Composition [ PreventDefault $ WM.toEvent e, SwitchTab Help ]
+                          , HE.onClick \me -> let e = WM.toEvent me in Just $ Composition [ PreventDefault e, StopPropagation e, SwitchTab Help ]
                           ]
                           [ HH.text "Help" ]
                       ]
@@ -316,47 +355,113 @@ main =
                         REPL -> []
                         _ -> [ HH.ClassName "hidden" ]
                 ]
-                [ HH.div [ HP.classes [ HH.ClassName "flex", HH.ClassName "flex-col" ] ] $ repl.history
-                    # map \({ input, output }) ->
-                        HH.div [ HE.onClick $ const $ Just $ CopyToClipboard input ]
-                          $ [ inputLine [] $ Dummy
-                                $ HH.span
-                                    [ HP.classes [ HH.ClassName "break-all", HH.ClassName "whitespace-pre-wrap" ] ]
-                                    [ HH.text input ]
+                $ ( case state.popupState of
+                      Hidden -> []
+                      Display selectOrCopyStr ->
+                        [ HH.div
+                            [ HP.classes
+                                $ [ HH.ClassName "absolute"
+                                  , HH.ClassName "flex"
+                                  , HH.ClassName "flex-col"
+                                  , HH.ClassName "z-20"
+                                  ]
                             ]
-                          <> case output of
-                              Just str ->
-                                [ HH.div
-                                    [ HP.classes [ HH.ClassName "mb-4", HH.ClassName "break-all", HH.ClassName "whitespace-pre-wrap", HH.ClassName "font-mono" ]
+                            [ HH.div
+                                [ HP.classes
+                                    [ HH.ClassName "flex"
+                                    , HH.ClassName "bg-gray-900"
+                                    , HH.ClassName "text-gray-400"
+                                    , HH.ClassName "rounded"
+                                    , HH.ClassName "border-2"
+                                    , HH.ClassName "border-gray-800"
+                                    , HH.ClassName "z-30"
                                     ]
-                                    [ HH.text str ]
                                 ]
-                              Nothing -> []
-                -- display input pool at multiline mode
-                , inputLine
-                    ( case repl.inputMode of
-                        R.Singleline -> [ HH.ClassName "hidden" ]
-                        R.Multiline ->
-                          if repl.inputPool == [] then
-                            [ HH.ClassName "hidden" ]
-                          else
-                            []
-                    )
-                    $ Dummy
-                    $ HH.div [ HP.classes [ HH.ClassName "flex", HH.ClassName "flex-col" ] ]
-                    $ repl.inputPool
-                    # map \input ->
-                        HH.span [ HP.classes [ HH.ClassName "break-all", HH.ClassName "whitespace-pre-wrap" ] ]
-                          [ HH.text input ]
-                , inputLine [] $ TextArea
-                    $ case repl.inputMode of
-                        R.Singleline -> WithPrompt
-                        R.Multiline ->
-                          if repl.inputPool == [] then
-                            WithPrompt
-                          else
-                            WithoutPrompt
-                ]
+                                [ HH.button
+                                    [ HP.classes
+                                        [ HH.ClassName "appearance-none"
+                                        , HH.ClassName "p-2"
+                                        , HH.ClassName "border-r-2"
+                                        , HH.ClassName "border-gray-800"
+                                        , HH.ClassName "focus:bg-blue-600"
+                                        ]
+                                    , HE.onClick \me -> let e = WM.toEvent me in Just $ Composition [ PreventDefault e, StopPropagation e, Select selectOrCopyStr ]
+                                    ]
+                                    [ HH.text "Select" ]
+                                , HH.button
+                                    [ HP.classes
+                                        [ HH.ClassName "appearance-none"
+                                        , HH.ClassName "p-2"
+                                        , HH.ClassName "focus:bg-blue-600"
+                                        ]
+                                    , HE.onClick \me -> let e = WM.toEvent me in Just $ Composition [ PreventDefault e, StopPropagation e, CopyToClipboard selectOrCopyStr ]
+                                    ]
+                                    [ HH.text "Copy" ]
+                                ]
+                            , HH.div
+                                [ HP.classes
+                                    [ HH.ClassName "bg-gray-800"
+                                    , HH.ClassName "w-5"
+                                    , HH.ClassName "h-5"
+                                    ]
+                                , CSS.style do
+                                    CSS.transforms
+                                      [ CSS.translate (CSS.em 1.3) (CSS.em $ -0.6)
+                                      , CSS.rotate $ CSS.deg $ -45.0
+                                      ]
+                                ]
+                                []
+                            ]
+                        ]
+                  )
+                <> [ HH.div [ HP.classes [ HH.ClassName "flex", HH.ClassName "flex-col" ] ] $ repl.history
+                      # map \({ input, output }) ->
+                          HH.div_
+                            $ [ inputLine [] $ Dummy
+                                  $ HH.span
+                                      [ HP.classes
+                                          [ HH.ClassName "inline-block"
+                                          , HH.ClassName "w-full"
+                                          , HH.ClassName "break-all"
+                                          , HH.ClassName "whitespace-pre-wrap"
+                                          ]
+                                      , HE.onClick \me -> let e = WM.toEvent me in Just $ Composition [ PreventDefault e, StopPropagation e, DisplaySelectOrCopyPopup input ]
+                                      ]
+                                      [ HH.text input ]
+                              ]
+                            <> case output of
+                                Just str ->
+                                  [ HH.div
+                                      [ HP.classes [ HH.ClassName "mb-4", HH.ClassName "break-all", HH.ClassName "whitespace-pre-wrap", HH.ClassName "font-mono" ]
+                                      ]
+                                      [ HH.text str ]
+                                  ]
+                                Nothing -> []
+                  -- display input pool at multiline mode
+                  , inputLine
+                      ( case repl.inputMode of
+                          R.Singleline -> [ HH.ClassName "hidden" ]
+                          R.Multiline ->
+                            if repl.inputPool == [] then
+                              [ HH.ClassName "hidden" ]
+                            else
+                              []
+                      )
+                      $ Dummy
+                      $ HH.div [ HP.classes [ HH.ClassName "flex", HH.ClassName "flex-col" ] ]
+                      $ repl.inputPool
+                      # map \input ->
+                          HH.span [ HP.classes [ HH.ClassName "break-all", HH.ClassName "whitespace-pre-wrap" ] ]
+                            [ HH.text input ]
+                  , inputLine [] $ TextArea
+                      $ case repl.inputMode of
+                          R.Singleline -> WithPrompt
+                          R.Multiline ->
+                            if repl.inputPool == [] then
+                              WithPrompt
+                            else
+                              WithoutPrompt
+                  ]
             , HH.section
                 [ HP.classes
                     $ case state.tab of
