@@ -1,4 +1,4 @@
-'use strict'
+"use strict";
 
 exports.addEventListenerOnce = function(type) {
   return function(listener) {
@@ -7,10 +7,10 @@ exports.addEventListenerOnce = function(type) {
         return function() {
           return target.addEventListener(type, listener, {
             capture: useCapture,
-            once: true,
-          })
-        }
-      }
-    }
-  }
-}
+            once: true
+          });
+        };
+      };
+    };
+  };
+};

@@ -1,23 +1,21 @@
 module Editor where
 
-import Effect.Console
 import Prelude
 import CSS as CSS
 import Data.Array (index, length, (:))
 import Data.Display (display)
 import Data.Foldable (for_)
-import Data.Int (round)
+import Data.Int (round, toNumber)
 import Data.Maybe (Maybe(..))
 import Data.MediaType.Common as MediaType
 import Data.Newtype (unwrap)
 import Data.String.CodeUnits as S
 import Data.Tuple (Tuple(..))
 import Effect (Effect)
-import Effect.Console as Console
 import Halogen as H
 import Halogen.Aff as HA
 import Halogen.HTML as HH
-import Halogen.HTML.CSS (style) as CSS
+import Halogen.HTML.CSS as HCSS
 import Halogen.HTML.Core as HHC
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
@@ -61,7 +59,12 @@ data Tab
 
 data SelectOrCopyPopupState
   = Hidden
-  | Display String
+  | Display String Position
+
+type Position
+  = { x :: Int
+    , y :: Int
+    }
 
 data Action
   = Composition (Array Action)
@@ -76,7 +79,7 @@ data Action
   | HistoryDown
   | SwitchTab Tab
   | FocusById Id
-  | DisplaySelectOrCopyPopup String
+  | DisplaySelectOrCopyPopup String WM.MouseEvent
   | HiddenSelectOrCopyPopup
   | Select String
   | CopyToClipboard String
@@ -215,7 +218,7 @@ main =
             case WHE.fromElement =<< maybeElem of
               Just elem -> WHE.focus elem
               Nothing -> pure unit
-    DisplaySelectOrCopyPopup selectOrCopyStr -> H.modify_ _ { popupState = Display selectOrCopyStr }
+    DisplaySelectOrCopyPopup selectOrCopyStr me -> H.modify_ _ { popupState = Display selectOrCopyStr { x: WM.pageX me, y: WM.pageY me } }
     HiddenSelectOrCopyPopup -> H.modify_ _ { popupState = Hidden }
     Select selectedStr -> do
       handleAction HiddenSelectOrCopyPopup
@@ -258,7 +261,11 @@ main =
             , HH.ClassName "text-base"
             , HH.ClassName "font-sans"
             ]
-        , HE.onClick \me -> let e = WM.toEvent me in Just $ Composition [ PreventDefault e, StopPropagation e, HiddenSelectOrCopyPopup ]
+        , HE.onClick \me ->
+            let
+              e = WM.toEvent me
+            in
+              Just $ Composition [ PreventDefault e, StopPropagation e, HiddenSelectOrCopyPopup ]
         ]
         [ HH.header [ HP.classes [ HH.ClassName "flex", HH.ClassName "justify-between", HH.ClassName "py-4" ] ]
             [ HH.h1 [ HP.classes [ HH.ClassName "mx-6", HH.ClassName "text-3xl" ] ]
@@ -320,7 +327,11 @@ main =
                       ]
                       [ HH.a
                           [ HP.classes [ HH.ClassName "cursor-default" ]
-                          , HE.onClick \me -> let e = WM.toEvent me in Just $ Composition [ PreventDefault e, StopPropagation e, SwitchTab REPL, FocusById TextAreaId ]
+                          , HE.onClick \me ->
+                              let
+                                e = WM.toEvent me
+                              in
+                                Just $ Composition [ PreventDefault e, StopPropagation e, SwitchTab REPL, FocusById TextAreaId ]
                           ]
                           [ HH.text "REPL" ]
                       ]
@@ -332,7 +343,11 @@ main =
                       ]
                       [ HH.a
                           [ HP.classes [ HH.ClassName "cursor-default" ]
-                          , HE.onClick \me -> let e = WM.toEvent me in Just $ Composition [ PreventDefault e, StopPropagation e, SwitchTab Environment ]
+                          , HE.onClick \me ->
+                              let
+                                e = WM.toEvent me
+                              in
+                                Just $ Composition [ PreventDefault e, StopPropagation e, SwitchTab Environment ]
                           ]
                           [ HH.text "Environment" ]
                       ]
@@ -344,7 +359,11 @@ main =
                       ]
                       [ HH.a
                           [ HP.classes [ HH.ClassName "cursor-default" ]
-                          , HE.onClick \me -> let e = WM.toEvent me in Just $ Composition [ PreventDefault e, StopPropagation e, SwitchTab Help ]
+                          , HE.onClick \me ->
+                              let
+                                e = WM.toEvent me
+                              in
+                                Just $ Composition [ PreventDefault e, StopPropagation e, SwitchTab Help ]
                           ]
                           [ HH.text "Help" ]
                       ]
@@ -357,7 +376,7 @@ main =
                 ]
                 $ ( case state.popupState of
                       Hidden -> []
-                      Display selectOrCopyStr ->
+                      Display selectOrCopyStr { x, y } ->
                         [ HH.div
                             [ HP.classes
                                 $ [ HH.ClassName "absolute"
@@ -365,6 +384,9 @@ main =
                                   , HH.ClassName "flex-col"
                                   , HH.ClassName "z-20"
                                   ]
+                            , HCSS.style do
+                                CSS.left $ CSS.px $ toNumber $ x - 30
+                                CSS.top $ CSS.px $ toNumber $ y - 60
                             ]
                             [ HH.div
                                 [ HP.classes
@@ -385,7 +407,11 @@ main =
                                         , HH.ClassName "border-gray-800"
                                         , HH.ClassName "focus:bg-blue-600"
                                         ]
-                                    , HE.onClick \me -> let e = WM.toEvent me in Just $ Composition [ PreventDefault e, StopPropagation e, Select selectOrCopyStr ]
+                                    , HE.onClick \me ->
+                                        let
+                                          e = WM.toEvent me
+                                        in
+                                          Just $ Composition [ PreventDefault e, StopPropagation e, Select selectOrCopyStr ]
                                     ]
                                     [ HH.text "Select" ]
                                 , HH.button
@@ -394,17 +420,23 @@ main =
                                         , HH.ClassName "p-2"
                                         , HH.ClassName "focus:bg-blue-600"
                                         ]
-                                    , HE.onClick \me -> let e = WM.toEvent me in Just $ Composition [ PreventDefault e, StopPropagation e, CopyToClipboard selectOrCopyStr ]
+                                    , HE.onClick \me ->
+                                        let
+                                          e = WM.toEvent me
+                                        in
+                                          Just $ Composition [ PreventDefault e, StopPropagation e, CopyToClipboard selectOrCopyStr ]
                                     ]
                                     [ HH.text "Copy" ]
                                 ]
                             , HH.div
                                 [ HP.classes
                                     [ HH.ClassName "bg-gray-800"
+                                    , HH.ClassName "border-2"
+                                    , HH.ClassName "border-gray-900"
                                     , HH.ClassName "w-5"
                                     , HH.ClassName "h-5"
                                     ]
-                                , CSS.style do
+                                , HCSS.style do
                                     CSS.transforms
                                       [ CSS.translate (CSS.em 1.3) (CSS.em $ -0.6)
                                       , CSS.rotate $ CSS.deg $ -45.0
@@ -425,14 +457,23 @@ main =
                                           , HH.ClassName "break-all"
                                           , HH.ClassName "whitespace-pre-wrap"
                                           ]
-                                      , HE.onClick \me -> let e = WM.toEvent me in Just $ Composition [ PreventDefault e, StopPropagation e, DisplaySelectOrCopyPopup input ]
+                                      , HE.onClick \me ->
+                                          let
+                                            e = WM.toEvent me
+                                          in
+                                            Just $ Composition [ PreventDefault e, StopPropagation e, DisplaySelectOrCopyPopup input me ]
                                       ]
                                       [ HH.text input ]
                               ]
                             <> case output of
                                 Just str ->
                                   [ HH.div
-                                      [ HP.classes [ HH.ClassName "mb-4", HH.ClassName "break-all", HH.ClassName "whitespace-pre-wrap", HH.ClassName "font-mono" ]
+                                      [ HP.classes
+                                          [ HH.ClassName "mb-4"
+                                          , HH.ClassName "break-all"
+                                          , HH.ClassName "whitespace-pre-wrap"
+                                          , HH.ClassName "font-mono"
+                                          ]
                                       ]
                                       [ HH.text str ]
                                   ]
@@ -502,7 +543,8 @@ main =
                         , HH.div [ HP.classes [ HH.ClassName "ml-4", HH.ClassName "mt-2", HH.ClassName "mb-4" ] ]
                             [ HH.text "<variable> ::= <identifier>" ]
                         , HH.div [ HP.classes [ HH.ClassName "ml-2", HH.ClassName "break-words" ] ]
-                            [ HH.p [] [ HH.text "<identifier> consists of alphabets, digits, ASCII characters except 'λ', and symbols '!', '@', '#', '$', '%', '^', '&', '*', '-', '_', '+', '|', '<', '>', '/', '?'." ]
+                            [ HH.p []
+                                [ HH.text "<identifier> consists of alphabets, digits, ASCII characters except 'λ', and symbols '!', '@', '#', '$', '%', '^', '&', '*', '-', '_', '+', '|', '<', '>', '/', '?'." ]
                             ]
                         ]
                     , HH.section [ HP.classes [ HH.ClassName "mb-4" ] ]
