@@ -9,11 +9,10 @@
 - PureScript 0.13.3
 - Spago 0.10.0.0 or later
 
-## TODO
+## Future works
 
 - [x] Multilin input
 - [ ] Implement other evaluation strategies: Call by need, Call by name
-- [ ] Repair Call by value
 - [x] Display the environment
 - [ ] Add an editor page
 - [x] Add a tab to switch pages (REPL, Environment, Editor)
@@ -21,3 +20,6 @@
 - [ ] Design for Tablet
 - [x] Implement Prime as a source code
 - [x] Add a history select/copy popup for Smartphones
+
+## Bugs
+- [ ] Repair Call by value
