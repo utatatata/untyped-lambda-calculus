@@ -198,96 +198,96 @@ testAlphaConversion =
             alphaConversion (Substitution "x" (Application (Variable "z") (Variable "x"))) (LambdaAbstraction "y" (Variable "y")) `shouldEqual` LambdaAbstraction "y" (Variable "y")
           it "(λy.y)[x := z w] ≡ λy.(y[x := x x]) ≡ λy.y" do
             alphaConversion (Substitution "x" (Application (Variable "z") (Variable "w"))) (LambdaAbstraction "y" (Variable "y")) `shouldEqual` LambdaAbstraction "y" (Variable "y")
-      describe "(λy.M)[x := N] ≡ λy.(M[x := N[y := y_0]]), if x ≠ y, provided y ∈ FV(N), provided y_0 ∉ FV(N)" do
+      describe "(λy.M)[x := N] ≡ λy_0.(M[y := y_0])[x := N], if x ≠ y, provided y ∈ FV(N), y_0 ∉ FV(N)" do
         describe "M = <variable>, N = <variable>" do
           -- M = x
-          it "(λy.x)[x := y] ≡ λy.(x[x := y[y := y_0]]) ≡ λy.y_0" do
-            alphaConversion (Substitution "x" (Variable "y")) (LambdaAbstraction "y" (Variable "x")) `shouldEqual` LambdaAbstraction "y" (Variable "y_0")
+          it "(λy.x)[x := y] ≡ (λy_0.x[y := y_0])[x := y] ≡ λy_0.y" do
+            alphaConversion (Substitution "x" (Variable "y")) (LambdaAbstraction "y" (Variable "x")) `shouldEqual` LambdaAbstraction "y_0" (Variable "y")
           -- M = y
-          it "(λy.y)[x := y] ≡ λy.(y[x := y[y := y_0]]) ≡ λy.y" do
-            alphaConversion (Substitution "x" (Variable "y")) (LambdaAbstraction "y" (Variable "y")) `shouldEqual` LambdaAbstraction "y" (Variable "y")
+          it "(λy.y)[x := y] ≡ (λy_0.y[y := y_0])[x := y] ≡ λy_0.y_0" do
+            alphaConversion (Substitution "x" (Variable "y")) (LambdaAbstraction "y" (Variable "y")) `shouldEqual` LambdaAbstraction "y_0" (Variable "y_0")
         describe "M = <variable>, N = λ<variable>.<variable>" do
           -- M = x
-          it "(λy.x)[x := λx.y] ≡ λy.(x[x:= (λx.y)[y := y_0]]) ≡ λy x.y_0" do
-            alphaConversion (Substitution "x" (LambdaAbstraction "x" (Variable "y"))) (LambdaAbstraction "y" (Variable "x")) `shouldEqual` LambdaAbstraction "y" (LambdaAbstraction "x" (Variable "y_0"))
-          it "(λy.x)[x := λz.y] ≡ λy.(x[x:= (λz.y)[y := y_0]]) ≡ λy z.y_0" do
-            alphaConversion (Substitution "x" (LambdaAbstraction "z" (Variable "y"))) (LambdaAbstraction "y" (Variable "x")) `shouldEqual` LambdaAbstraction "y" (LambdaAbstraction "z" (Variable "y_0"))
+          it "(λy.x)[x := λx.y] ≡ (λy_0.x[y := y_0])[x := λx.y] ≡ λy_0 x.y" do
+            alphaConversion (Substitution "x" (LambdaAbstraction "x" (Variable "y"))) (LambdaAbstraction "y" (Variable "x")) `shouldEqual` LambdaAbstraction "y_0" (LambdaAbstraction "x" (Variable "y"))
+          it "(λy.x)[x := λz.y] ≡ (λy_0.x[y := y_0])[x := λz.y] ≡ λy_0 z.y" do
+            alphaConversion (Substitution "x" (LambdaAbstraction "z" (Variable "y"))) (LambdaAbstraction "y" (Variable "x")) `shouldEqual` LambdaAbstraction "y_0" (LambdaAbstraction "z" (Variable "y"))
           -- M = y
-          it "(λy.y)[x := λx.y] ≡ λy.(y[x := (λx.y)[y := y_0]]) ≡ λy.y" do
-            alphaConversion (Substitution "x" (LambdaAbstraction "x" (Variable "y"))) (LambdaAbstraction "y" (Variable "y")) `shouldEqual` LambdaAbstraction "y" (Variable "y")
-          it "(λy.y)[x := λz.y] ≡ λy.(y[x := (λz.y)[y := y_0]]) ≡ λy.y" do
-            alphaConversion (Substitution "x" (LambdaAbstraction "z" (Variable "y"))) (LambdaAbstraction "y" (Variable "y")) `shouldEqual` LambdaAbstraction "y" (Variable "y")
-      describe "(λy.M)[x := N] ≡ λy.(M[x := N[y := y_1]]), if x ≠ y, provided y ∈ FV(N), provided y_0 ∈ FV(N), provided y_1 ∉ FV(N)" do
+          it "(λy.y)[x := λx.y] ≡ (λy_0.y[y := y_0])[x := λx.y] ≡ λy_0.y_0" do
+            alphaConversion (Substitution "x" (LambdaAbstraction "x" (Variable "y"))) (LambdaAbstraction "y" (Variable "y")) `shouldEqual` LambdaAbstraction "y_0" (Variable "y_0")
+          it "(λy.y)[x := λz.y] ≡ (λy_0.y[y := y_0])[x := λz.y] ≡ λy_0.y_0" do
+            alphaConversion (Substitution "x" (LambdaAbstraction "z" (Variable "y"))) (LambdaAbstraction "y" (Variable "y")) `shouldEqual` LambdaAbstraction "y_0" (Variable "y_0")
+      describe "(λy.M)[x := N] ≡ (λy_1.M[y := y_1])[x := N], if x ≠ y, provided y ∈ FV(N), provided y_0 ∈ FV(N), y_1 ∉ FV(N)" do
         describe "M = <variable>, N = λ<variable>.(<variable> <variable>)" do
           -- M = x
-          it "(λy.x)[x := λx.y y_0] ≡ λy.(x[x := (λx.y y_0)[y := y_1]]) ≡ λy x.y_1 y_0" do
-            alphaConversion (Substitution "x" (LambdaAbstraction "x" (Application (Variable "y") (Variable "y_0")))) (LambdaAbstraction "y" (Variable "x")) `shouldEqual` LambdaAbstraction "y" (LambdaAbstraction "x" (Application (Variable "y_1") (Variable "y_0")))
-          it "(λy.x)[x := λx.y_0 y] ≡ λy.(x[x := (λx.y_0 y)[y := y_1]]) ≡ λy x.y_0 y_1" do
-            alphaConversion (Substitution "x" (LambdaAbstraction "x" (Application (Variable "y_0") (Variable "y")))) (LambdaAbstraction "y" (Variable "x")) `shouldEqual` LambdaAbstraction "y" (LambdaAbstraction "x" (Application (Variable "y_0") (Variable "y_1")))
-          it "(λy.x)[x := λz.y y_0] ≡ λy.(x[x := (λz.y y_0)[y := y_1]]) ≡ λy z.y_1 y_0" do
-            alphaConversion (Substitution "x" (LambdaAbstraction "z" (Application (Variable "y") (Variable "y_0")))) (LambdaAbstraction "y" (Variable "x")) `shouldEqual` LambdaAbstraction "y" (LambdaAbstraction "z" (Application (Variable "y_1") (Variable "y_0")))
-          it "(λy.x)[x := λz.y_0 y] ≡ λy.(x[x := (λz.y_0 y)[y := y_1]]) ≡ λy z.y_0 y_1" do
-            alphaConversion (Substitution "x" (LambdaAbstraction "z" (Application (Variable "y_0") (Variable "y")))) (LambdaAbstraction "y" (Variable "x")) `shouldEqual` LambdaAbstraction "y" (LambdaAbstraction "z" (Application (Variable "y_0") (Variable "y_1")))
+          it "(λy.x)[x := λx.y y_0] ≡ (λy_1.x[y := y_1])[x := λx.y y_0] ≡ λy_1 x.y y_0" do
+            alphaConversion (Substitution "x" (LambdaAbstraction "x" (Application (Variable "y") (Variable "y_0")))) (LambdaAbstraction "y" (Variable "x")) `shouldEqual` LambdaAbstraction "y_1" (LambdaAbstraction "x" (Application (Variable "y") (Variable "y_0")))
+          it "(λy.x)[x := λx.y_0 y] ≡ (λy_1.x[y := y_1])[x := λx.y_0 y] ≡ λy_1 x.y_0 y" do
+            alphaConversion (Substitution "x" (LambdaAbstraction "x" (Application (Variable "y_0") (Variable "y")))) (LambdaAbstraction "y" (Variable "x")) `shouldEqual` LambdaAbstraction "y_1" (LambdaAbstraction "x" (Application (Variable "y_0") (Variable "y")))
+          it "(λy.x)[x := λz.y y_0] ≡ (λy_1.x[y := y_1])[x := λz.y y_0] ≡ λy_1 z.y y_0" do
+            alphaConversion (Substitution "x" (LambdaAbstraction "z" (Application (Variable "y") (Variable "y_0")))) (LambdaAbstraction "y" (Variable "x")) `shouldEqual` LambdaAbstraction "y_1" (LambdaAbstraction "z" (Application (Variable "y") (Variable "y_0")))
+          it "(λy.x)[x := λz.y_0 y] ≡ (λy_1.x[y := y_1])[x := λz.y_0 y] ≡ λy_1 z.y_0 y" do
+            alphaConversion (Substitution "x" (LambdaAbstraction "z" (Application (Variable "y_0") (Variable "y")))) (LambdaAbstraction "y" (Variable "x")) `shouldEqual` LambdaAbstraction "y_1" (LambdaAbstraction "z" (Application (Variable "y_0") (Variable "y")))
           -- M = y
-          it "(λy.y)[x := λx.y y_0] ≡ λy.(x[x := (λx.y y_0)[y := y_1]]) ≡ λy y" do
-            alphaConversion (Substitution "x" (LambdaAbstraction "x" (Application (Variable "y") (Variable "y_0")))) (LambdaAbstraction "y" (Variable "y")) `shouldEqual` LambdaAbstraction "y" (Variable "y")
-          it "(λy.y)[x := λx.y_0 y] ≡ λy.(x[x := (λx.y_0 y)[y := y_1]]) ≡ λy y" do
-            alphaConversion (Substitution "x" (LambdaAbstraction "x" (Application (Variable "y_0") (Variable "y")))) (LambdaAbstraction "y" (Variable "y")) `shouldEqual` LambdaAbstraction "y" (Variable "y")
-          it "(λy.y)[x := λz.y y_0] ≡ λy.(x[x := (λz.y y_0)[y := y_1]]) ≡ λy y" do
-            alphaConversion (Substitution "x" (LambdaAbstraction "z" (Application (Variable "y") (Variable "y_0")))) (LambdaAbstraction "y" (Variable "y")) `shouldEqual` LambdaAbstraction "y" (Variable "y")
-          it "(λy.y)[x := λz.y_0 y] ≡ λy.(x[x := (λz.y_0 y)[y := y_1]]) ≡ λy y" do
-            alphaConversion (Substitution "x" (LambdaAbstraction "z" (Application (Variable "y_0") (Variable "y")))) (LambdaAbstraction "y" (Variable "y")) `shouldEqual` LambdaAbstraction "y" (Variable "y")
+          it "(λy.y)[x := λx.y y_0] ≡ (λy_1.y[y := y_1])[x := λx.y y_0] ≡ λy_1.y_1" do
+            alphaConversion (Substitution "x" (LambdaAbstraction "x" (Application (Variable "y") (Variable "y_0")))) (LambdaAbstraction "y" (Variable "y")) `shouldEqual` LambdaAbstraction "y_1" (Variable "y_1")
+          it "(λy.y)[x := λx.y_0 y] ≡ (λy_1.y[y := y_1])[x := λx.y_0 y] ≡ λy_1.y_1" do
+            alphaConversion (Substitution "x" (LambdaAbstraction "x" (Application (Variable "y_0") (Variable "y")))) (LambdaAbstraction "y" (Variable "y")) `shouldEqual` LambdaAbstraction "y_1" (Variable "y_1")
+          it "(λy.y)[x := λz.y y_0] ≡ (λy_1.y[y := y_1])[x := λz.y y_0] ≡ λy_1.y_1" do
+            alphaConversion (Substitution "x" (LambdaAbstraction "z" (Application (Variable "y") (Variable "y_0")))) (LambdaAbstraction "y" (Variable "y")) `shouldEqual` LambdaAbstraction "y_1" (Variable "y_1")
+          it "(λy.y)[x := λz.y_0 y] ≡ (λy_1.y[y := y_1])[x := λz.y_0 y] ≡ λy_1.y_1" do
+            alphaConversion (Substitution "x" (LambdaAbstraction "z" (Application (Variable "y_0") (Variable "y")))) (LambdaAbstraction "y" (Variable "y")) `shouldEqual` LambdaAbstraction "y_1" (Variable "y_1")
         describe "M = <variable>, N = (<variable> (<variable> <variable>))" do
           -- M = x
-          it "(λy.x)[x := x y y_0] ≡　λy.(x[x := (x y y_0)[y := y_1]]) ≡ λy.x y_1 y_0" do
-            alphaConversion (Substitution "x" (Application (Application (Variable "x") (Variable "y")) (Variable "y_0"))) (LambdaAbstraction "y" (Variable "x")) `shouldEqual` LambdaAbstraction "y" (Application (Application (Variable "x") (Variable "y_1")) (Variable "y_0"))
-          it "(λy.x)[x := x y_0 y] ≡　λy.(x[x := (x y_0 y)[y := y_1]]) ≡ λy.x y_0 y_1" do
-            alphaConversion (Substitution "x" (Application (Application (Variable "x") (Variable "y_0")) (Variable "y"))) (LambdaAbstraction "y" (Variable "x")) `shouldEqual` LambdaAbstraction "y" (Application (Application (Variable "x") (Variable "y_0")) (Variable "y_1"))
-          it "(λy.x)[x := z y y_0] ≡　λy.(x[x := (z y y_0)[y := y_1]]) ≡ λy.z y_1 y_0" do
-            alphaConversion (Substitution "x" (Application (Application (Variable "z") (Variable "y")) (Variable "y_0"))) (LambdaAbstraction "y" (Variable "x")) `shouldEqual` LambdaAbstraction "y" (Application (Application (Variable "z") (Variable "y_1")) (Variable "y_0"))
-          it "(λy.x)[x := z y_0 y] ≡　λy.(x[x := (z y_0 y)[y := y_1]]) ≡ λy.z y_0 y_1" do
-            alphaConversion (Substitution "x" (Application (Application (Variable "z") (Variable "y_0")) (Variable "y"))) (LambdaAbstraction "y" (Variable "x")) `shouldEqual` LambdaAbstraction "y" (Application (Application (Variable "z") (Variable "y_0")) (Variable "y_1"))
-          it "(λy.x)[x := y x y_0] ≡　λy.(x[x := (y x y_0)[y := y_1]]) ≡ λy.y_1 x y_0" do
-            alphaConversion (Substitution "x" (Application (Application (Variable "y") (Variable "x")) (Variable "y_0"))) (LambdaAbstraction "y" (Variable "x")) `shouldEqual` LambdaAbstraction "y" (Application (Application (Variable "y_1") (Variable "x")) (Variable "y_0"))
-          it "(λy.x)[x := y_0 x y] ≡　λy.(x[x := (y_0 x y)[y := y_1]]) ≡ λy.y_0 x y_1" do
-            alphaConversion (Substitution "x" (Application (Application (Variable "y_0") (Variable "x")) (Variable "y"))) (LambdaAbstraction "y" (Variable "x")) `shouldEqual` LambdaAbstraction "y" (Application (Application (Variable "y_0") (Variable "x")) (Variable "y_1"))
-          it "(λy.x)[x := y z y_0] ≡　λy.(x[x := (y z y_0)[y := y_1]]) ≡ λy.y_1 z y_0" do
-            alphaConversion (Substitution "x" (Application (Application (Variable "y") (Variable "z")) (Variable "y_0"))) (LambdaAbstraction "y" (Variable "x")) `shouldEqual` LambdaAbstraction "y" (Application (Application (Variable "y_1") (Variable "z")) (Variable "y_0"))
-          it "(λy.x)[x := y_0 z y] ≡　λy.(x[x := (y_0 z y)[y := y_1]]) ≡ λy.y_0 z y_1" do
-            alphaConversion (Substitution "x" (Application (Application (Variable "y_0") (Variable "z")) (Variable "y"))) (LambdaAbstraction "y" (Variable "x")) `shouldEqual` LambdaAbstraction "y" (Application (Application (Variable "y_0") (Variable "z")) (Variable "y_1"))
-          it "(λy.x)[x := y y_0 x] ≡　λy.(x[x := (y y_0 x)[y := y_1]]) ≡ λy.y_1 y_0 x" do
-            alphaConversion (Substitution "x" (Application (Application (Variable "y") (Variable "y_0")) (Variable "x"))) (LambdaAbstraction "y" (Variable "x")) `shouldEqual` LambdaAbstraction "y" (Application (Application (Variable "y_1") (Variable "y_0")) (Variable "x"))
-          it "(λy.x)[x := y_0 y x] ≡　λy.(x[x := (y_0 y x)[y := y_1]]) ≡ λy.y_0 y_1 x" do
-            alphaConversion (Substitution "x" (Application (Application (Variable "y_0") (Variable "y")) (Variable "x"))) (LambdaAbstraction "y" (Variable "x")) `shouldEqual` LambdaAbstraction "y" (Application (Application (Variable "y_0") (Variable "y_1")) (Variable "x"))
-          it "(λy.x)[x := y y_0 z] ≡　λy.(x[x := (y y_0 z)[y := y_1]]) ≡ λy.y_1 y_0 z" do
-            alphaConversion (Substitution "x" (Application (Application (Variable "y") (Variable "y_0")) (Variable "z"))) (LambdaAbstraction "y" (Variable "x")) `shouldEqual` LambdaAbstraction "y" (Application (Application (Variable "y_1") (Variable "y_0")) (Variable "z"))
-          it "(λy.x)[x := y_0 y z] ≡　λy.(x[x := (y_0 y z)[y := y_1]]) ≡ λy.y_0 y_1 z" do
-            alphaConversion (Substitution "x" (Application (Application (Variable "y_0") (Variable "y")) (Variable "z"))) (LambdaAbstraction "y" (Variable "x")) `shouldEqual` LambdaAbstraction "y" (Application (Application (Variable "y_0") (Variable "y_1")) (Variable "z"))
+          it "(λy.x)[x := x y y_0] ≡ (λy_1.x[y := y_1])[x := x y y_0] ≡ λy_1.x y y_0" do
+            alphaConversion (Substitution "x" (Application (Application (Variable "x") (Variable "y")) (Variable "y_0"))) (LambdaAbstraction "y" (Variable "x")) `shouldEqual` LambdaAbstraction "y_1" (Application (Application (Variable "x") (Variable "y")) (Variable "y_0"))
+          it "(λy.x)[x := x y_0 y] ≡ (λy.x)[x := x y_0 y] ≡ λy_1.x y_0 y" do
+            alphaConversion (Substitution "x" (Application (Application (Variable "x") (Variable "y_0")) (Variable "y"))) (LambdaAbstraction "y" (Variable "x")) `shouldEqual` LambdaAbstraction "y_1" (Application (Application (Variable "x") (Variable "y_0")) (Variable "y"))
+          it "(λy.x)[x := z y y_0] ≡ (λy.x)[x := z y y_0] ≡ λy_1.z y y_0" do
+            alphaConversion (Substitution "x" (Application (Application (Variable "z") (Variable "y")) (Variable "y_0"))) (LambdaAbstraction "y" (Variable "x")) `shouldEqual` LambdaAbstraction "y_1" (Application (Application (Variable "z") (Variable "y")) (Variable "y_0"))
+          it "(λy.x)[x := z y_0 y] ≡ (λy.x)[x := z y_0 y] ≡ λy_1.z y_0 y" do
+            alphaConversion (Substitution "x" (Application (Application (Variable "z") (Variable "y_0")) (Variable "y"))) (LambdaAbstraction "y" (Variable "x")) `shouldEqual` LambdaAbstraction "y_1" (Application (Application (Variable "z") (Variable "y_0")) (Variable "y"))
+          it "(λy.x)[x := y x y_0] ≡ (λy.x)[x := y x y_0] ≡ λy_1.y x y_0" do
+            alphaConversion (Substitution "x" (Application (Application (Variable "y") (Variable "x")) (Variable "y_0"))) (LambdaAbstraction "y" (Variable "x")) `shouldEqual` LambdaAbstraction "y_1" (Application (Application (Variable "y") (Variable "x")) (Variable "y_0"))
+          it "(λy.x)[x := y_0 x y] ≡ (λy.x)[x := y_0 x y] ≡ λy_1.y_0 x y" do
+            alphaConversion (Substitution "x" (Application (Application (Variable "y_0") (Variable "x")) (Variable "y"))) (LambdaAbstraction "y" (Variable "x")) `shouldEqual` LambdaAbstraction "y_1" (Application (Application (Variable "y_0") (Variable "x")) (Variable "y"))
+          it "(λy.x)[x := y z y_0] ≡ (λy.x)[x := y z y_0] ≡ λy_1.y z y_0" do
+            alphaConversion (Substitution "x" (Application (Application (Variable "y") (Variable "z")) (Variable "y_0"))) (LambdaAbstraction "y" (Variable "x")) `shouldEqual` LambdaAbstraction "y_1" (Application (Application (Variable "y") (Variable "z")) (Variable "y_0"))
+          it "(λy.x)[x := y_0 z y] ≡ (λy.x)[x := y_0 z y] ≡ λy_1.y_0 z y" do
+            alphaConversion (Substitution "x" (Application (Application (Variable "y_0") (Variable "z")) (Variable "y"))) (LambdaAbstraction "y" (Variable "x")) `shouldEqual` LambdaAbstraction "y_1" (Application (Application (Variable "y_0") (Variable "z")) (Variable "y"))
+          it "(λy.x)[x := y y_0 x] ≡ (λy.x)[x := y y_0 x] ≡ λy_1.y y_0 x" do
+            alphaConversion (Substitution "x" (Application (Application (Variable "y") (Variable "y_0")) (Variable "x"))) (LambdaAbstraction "y" (Variable "x")) `shouldEqual` LambdaAbstraction "y_1" (Application (Application (Variable "y") (Variable "y_0")) (Variable "x"))
+          it "(λy.x)[x := y_0 y x] ≡ (λy.x)[x := y_0 y x] ≡ λy_1.y_0 y x" do
+            alphaConversion (Substitution "x" (Application (Application (Variable "y_0") (Variable "y")) (Variable "x"))) (LambdaAbstraction "y" (Variable "x")) `shouldEqual` LambdaAbstraction "y_1" (Application (Application (Variable "y_0") (Variable "y")) (Variable "x"))
+          it "(λy.x)[x := y y_0 z] ≡ (λy.x)[x := y y_0 z] ≡ λy_1.y y_0 z" do
+            alphaConversion (Substitution "x" (Application (Application (Variable "y") (Variable "y_0")) (Variable "z"))) (LambdaAbstraction "y" (Variable "x")) `shouldEqual` LambdaAbstraction "y_1" (Application (Application (Variable "y") (Variable "y_0")) (Variable "z"))
+          it "(λy.x)[x := y_0 y z] ≡ (λy.x)[x := y_0 y z] ≡ λy_1.y_0 y z" do
+            alphaConversion (Substitution "x" (Application (Application (Variable "y_0") (Variable "y")) (Variable "z"))) (LambdaAbstraction "y" (Variable "x")) `shouldEqual` LambdaAbstraction "y_1" (Application (Application (Variable "y_0") (Variable "y")) (Variable "z"))
           -- M = y
-          it "(λy.y)[x := x y y_0] ≡　λy.(x[x := (x y y_0)[y := y_1]]) ≡ λy.y" do
-            alphaConversion (Substitution "x" (Application (Application (Variable "x") (Variable "y")) (Variable "y_0"))) (LambdaAbstraction "y" (Variable "y")) `shouldEqual` LambdaAbstraction "y" (Variable "y")
-          it "(λy.y)[x := x y_0 y] ≡　λy.(x[x := (x y_0 y)[y := y_1]]) ≡ λy.y" do
-            alphaConversion (Substitution "x" (Application (Application (Variable "x") (Variable "y_0")) (Variable "y"))) (LambdaAbstraction "y" (Variable "y")) `shouldEqual` LambdaAbstraction "y" (Variable "y")
-          it "(λy.y)[x := z y y_0] ≡　λy.(x[x := (z y y_0)[y := y_1]]) ≡ λy.y" do
-            alphaConversion (Substitution "x" (Application (Application (Variable "z") (Variable "y")) (Variable "y_0"))) (LambdaAbstraction "y" (Variable "y")) `shouldEqual` LambdaAbstraction "y" (Variable "y")
-          it "(λy.y)[x := z y_0 y] ≡　λy.(x[x := (z y_0 y)[y := y_1]]) ≡ λy.y" do
-            alphaConversion (Substitution "x" (Application (Application (Variable "z") (Variable "y_0")) (Variable "y"))) (LambdaAbstraction "y" (Variable "y")) `shouldEqual` LambdaAbstraction "y" (Variable "y")
-          it "(λy.y)[x := y x y_0] ≡　λy.(x[x := (y x y_0)[y := y_1]]) ≡ λy.y" do
-            alphaConversion (Substitution "x" (Application (Application (Variable "y") (Variable "x")) (Variable "y_0"))) (LambdaAbstraction "y" (Variable "y")) `shouldEqual` LambdaAbstraction "y" (Variable "y")
-          it "(λy.y)[x := y_0 x y] ≡　λy.(x[x := (y_0 x y)[y := y_1]]) ≡ λy.y" do
-            alphaConversion (Substitution "x" (Application (Application (Variable "y_0") (Variable "x")) (Variable "y"))) (LambdaAbstraction "y" (Variable "y")) `shouldEqual` LambdaAbstraction "y" (Variable "y")
-          it "(λy.y)[x := y z y_0] ≡　λy.(x[x := (y z y_0)[y := y_1]]) ≡ λy.y" do
-            alphaConversion (Substitution "x" (Application (Application (Variable "y") (Variable "z")) (Variable "y_0"))) (LambdaAbstraction "y" (Variable "y")) `shouldEqual` LambdaAbstraction "y" (Variable "y")
-          it "(λy.y)[x := y_0 z y] ≡　λy.(x[x := (y_0 z y)[y := y_1]]) ≡ λy.y" do
-            alphaConversion (Substitution "x" (Application (Application (Variable "y_0") (Variable "z")) (Variable "y"))) (LambdaAbstraction "y" (Variable "y")) `shouldEqual` LambdaAbstraction "y" (Variable "y")
-          it "(λy.y)[x := y y_0 x] ≡　λy.(x[x := (y y_0 x)[y := y_1]]) ≡ λy.y" do
-            alphaConversion (Substitution "x" (Application (Application (Variable "y") (Variable "y_0")) (Variable "x"))) (LambdaAbstraction "y" (Variable "y")) `shouldEqual` LambdaAbstraction "y" (Variable "y")
-          it "(λy.y)[x := y_0 y x] ≡　λy.(x[x := (y_0 y x)[y := y_1]]) ≡ λy.y" do
-            alphaConversion (Substitution "x" (Application (Application (Variable "y_0") (Variable "y")) (Variable "x"))) (LambdaAbstraction "y" (Variable "y")) `shouldEqual` LambdaAbstraction "y" (Variable "y")
-          it "(λy.y)[x := y y_0 z] ≡　λy.(x[x := (y y_0 z)[y := y_1]]) ≡ λy.y" do
-            alphaConversion (Substitution "x" (Application (Application (Variable "y") (Variable "y_0")) (Variable "z"))) (LambdaAbstraction "y" (Variable "y")) `shouldEqual` LambdaAbstraction "y" (Variable "y")
-          it "(λy.y)[x := y_0 y z] ≡　λy.(x[x := (y_0 y z)[y := y_1]]) ≡ λy.y" do
-            alphaConversion (Substitution "x" (Application (Application (Variable "y_0") (Variable "y")) (Variable "z"))) (LambdaAbstraction "y" (Variable "y")) `shouldEqual` LambdaAbstraction "y" (Variable "y")
+          it "(λy.y)[x := x y y_0] ≡ (λy_1.y[y := y_1])[x := x y y_0] ≡ λy_1.y_1" do
+            alphaConversion (Substitution "x" (Application (Application (Variable "x") (Variable "y")) (Variable "y_0"))) (LambdaAbstraction "y" (Variable "y")) `shouldEqual` LambdaAbstraction "y_1" (Variable "y_1")
+          it "(λy.y)[x := x y_0 y] ≡ (λy_1.y[y := y_1])[x := x y_0 y] ≡ λy_1.y_1" do
+            alphaConversion (Substitution "x" (Application (Application (Variable "x") (Variable "y_0")) (Variable "y"))) (LambdaAbstraction "y" (Variable "y")) `shouldEqual` LambdaAbstraction "y_1" (Variable "y_1")
+          it "(λy.y)[x := z y y_0] ≡ (λy_1.y[y := y_1])[x := z y y_0] ≡ λy_1.y_1" do
+            alphaConversion (Substitution "x" (Application (Application (Variable "z") (Variable "y")) (Variable "y_0"))) (LambdaAbstraction "y" (Variable "y")) `shouldEqual` LambdaAbstraction "y_1" (Variable "y_1")
+          it "(λy.y)[x := z y_0 y] ≡ (λy_1.y[y := y_1])[x := z y_0 y] ≡ λy_1.y_1" do
+            alphaConversion (Substitution "x" (Application (Application (Variable "z") (Variable "y_0")) (Variable "y"))) (LambdaAbstraction "y" (Variable "y")) `shouldEqual` LambdaAbstraction "y_1" (Variable "y_1")
+          it "(λy.y)[x := y x y_0] ≡ (λy_1.y[y := y_1])[x := y x y_0] ≡ λy_1.y_1" do
+            alphaConversion (Substitution "x" (Application (Application (Variable "y") (Variable "x")) (Variable "y_0"))) (LambdaAbstraction "y" (Variable "y")) `shouldEqual` LambdaAbstraction "y_1" (Variable "y_1")
+          it "(λy.y)[x := y_0 x y] ≡ (λy_1.y[y := y_1])[x := y_0 x y] ≡ λy_1.y_1" do
+            alphaConversion (Substitution "x" (Application (Application (Variable "y_0") (Variable "x")) (Variable "y"))) (LambdaAbstraction "y" (Variable "y")) `shouldEqual` LambdaAbstraction "y_1" (Variable "y_1")
+          it "(λy.y)[x := y z y_0] ≡ (λy_1.y[y := y_1])[x := y z y_0] ≡ λy_1.y_1" do
+            alphaConversion (Substitution "x" (Application (Application (Variable "y") (Variable "z")) (Variable "y_0"))) (LambdaAbstraction "y" (Variable "y")) `shouldEqual` LambdaAbstraction "y_1" (Variable "y_1")
+          it "(λy.y)[x := y_0 z y] ≡ (λy_1.y[y := y_1])[x := y_0 z y] ≡ λy_1.y_1" do
+            alphaConversion (Substitution "x" (Application (Application (Variable "y_0") (Variable "z")) (Variable "y"))) (LambdaAbstraction "y" (Variable "y")) `shouldEqual` LambdaAbstraction "y_1" (Variable "y_1")
+          it "(λy.y)[x := y y_0 x] ≡ (λy_1.y[y := y_1])[x := y y_0 x] ≡ λy_1.y_1" do
+            alphaConversion (Substitution "x" (Application (Application (Variable "y") (Variable "y_0")) (Variable "x"))) (LambdaAbstraction "y" (Variable "y")) `shouldEqual` LambdaAbstraction "y_1" (Variable "y_1")
+          it "(λy.y)[x := y_0 y x] ≡ (λy_1.y[y := y_1])[x := y_0 y x] ≡ λy_1.y_1" do
+            alphaConversion (Substitution "x" (Application (Application (Variable "y_0") (Variable "y")) (Variable "x"))) (LambdaAbstraction "y" (Variable "y")) `shouldEqual` LambdaAbstraction "y_1" (Variable "y_1")
+          it "(λy.y)[x := y y_0 z] ≡ (λy_1.y[y := y_1])[x := y y_0 z] ≡ λy_1.y_1" do
+            alphaConversion (Substitution "x" (Application (Application (Variable "y") (Variable "y_0")) (Variable "z"))) (LambdaAbstraction "y" (Variable "y")) `shouldEqual` LambdaAbstraction "y_1" (Variable "y_1")
+          it "(λy.y)[x := y_0 y z] ≡ (λy_1.y[y := y_1])[x := y_0 y z] ≡ λy_1.y_1" do
+            alphaConversion (Substitution "x" (Application (Application (Variable "y_0") (Variable "y")) (Variable "z"))) (LambdaAbstraction "y" (Variable "y")) `shouldEqual` LambdaAbstraction "y_1" (Variable "y_1")
 
 testBetaReduction :: Spec Unit
 testBetaReduction =
