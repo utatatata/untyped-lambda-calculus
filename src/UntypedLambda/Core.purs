@@ -90,15 +90,29 @@ alphaConversion (Substitution match _) lambda@(LambdaAbstraction bound _)
 alphaConversion sub@(Substitution _ replacement) (LambdaAbstraction bound body)
   | bound `notElem` freeVariables replacement = LambdaAbstraction bound $ alphaConversion sub body
 
-alphaConversion (Substitution match replacement) lambda@(LambdaAbstraction bound body) =
-  let
-    freeVars = freeVariables replacement
+alphaConversion sub@(Substitution _ replacement) lambda@(LambdaAbstraction bound body) = alphaConversion sub newLambda
+  where
+  newLambda = LambdaAbstraction newBound newBody
 
-    shadowVar n = let var = bound <> "_" <> (toStringAs decimal n) in if var `notElem` freeVars then var else shadowVar (n + 1)
+  newBody = alphaConversion (Substitution bound $ Variable newBound) body
 
-    newReplacement = alphaConversion (Substitution bound (Variable $ shadowVar 0)) replacement
-  in
-    alphaConversion (Substitution match newReplacement) lambda
+  newBound = rename bound replacement
+
+  -- rename x N, if x ∉ FV(N) then x else if x_0 ∉ FV(N) then x_0 else if x_1 ∉ FV(N) then x_1 else if ...
+  rename :: String -> Expression -> String
+  rename var expr =
+    if var `notElem` freeVars then
+      var
+    else
+      recur 0
+    where
+    freeVars = freeVariables expr
+
+    recur n =
+      let
+        renamed = var <> "_" <> (toStringAs decimal n)
+      in
+        if renamed `notElem` freeVars then renamed else recur $ n + 1
 
 alphaConversion sub (Application expr arg) = (Application `on` alphaConversion sub) expr arg
 
