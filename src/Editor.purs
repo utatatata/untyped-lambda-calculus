@@ -9,7 +9,8 @@ import Data.Int (round, toNumber)
 import Data.Maybe (Maybe(..))
 import Data.MediaType.Common as MediaType
 import Data.Newtype (unwrap)
-import Data.String.CodeUnits as S
+import Data.String (null, trim) as S
+import Data.String.CodeUnits (takeRight) as S
 import Data.Tuple (Tuple(..))
 import Effect (Effect)
 import Halogen as H
@@ -151,7 +152,12 @@ main =
       _ -> pure unit
     KeyUp e -> case WK.key e of
       -- onKeyDown is PC only, but onKeyUp work with both PC and smartphone (software keyboard)
-      "Enter" -> handleAction $ Composition [ PreventDefault $ WK.toEvent e, Eval ]
+      "Enter" -> do
+        { input } <- H.get
+        if S.null $ S.trim input then
+          pure unit
+        else
+          handleAction $ Composition [ PreventDefault $ WK.toEvent e, Eval ]
       _ -> pure unit
     CalculateTextAreaRows input -> do
       maybeRows <-
@@ -261,11 +267,7 @@ main =
             , HH.ClassName "text-base"
             , HH.ClassName "font-sans"
             ]
-        , HE.onClick \me ->
-            let
-              e = WM.toEvent me
-            in
-              Just $ Composition [ PreventDefault e, StopPropagation e, HiddenSelectOrCopyPopup ]
+        , HE.onClick $ const $ Just HiddenSelectOrCopyPopup
         ]
         [ HH.header [ HP.classes [ HH.ClassName "flex", HH.ClassName "justify-between", HH.ClassName "py-4" ] ]
             [ HH.h1 [ HP.classes [ HH.ClassName "mx-6", HH.ClassName "text-3xl" ] ]

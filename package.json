@@ -1,6 +1,6 @@
 {
   "name": "untyped-lambda-calculus",
-  "version": "1.7.3",
+  "version": "1.7.4",
   "description": "A PureScript implementation of the untyped lambda calculus",
   "repository": "git@github.com:utatatata/untyped-lambda-calculus.git",
   "author": "utakuma <i@utakuma.info>",
