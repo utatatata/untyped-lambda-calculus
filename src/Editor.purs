@@ -1,8 +1,9 @@
 module Editor where
 
 import Prelude
+
 import CSS as CSS
-import Data.Array (index, length, (:))
+import Data.Array (index, length)
 import Data.Display (display)
 import Data.Foldable (for_)
 import Data.Int (round, toNumber)
@@ -100,6 +101,7 @@ data InputLineMode w i
 
 data PromptMode
   = WithPrompt
+  | WithPromptAndLoading
   | WithoutPrompt
 
 main :: Effect Unit
@@ -381,7 +383,7 @@ main =
                                 $ [ HH.ClassName "absolute"
                                   , HH.ClassName "flex"
                                   , HH.ClassName "flex-col"
-                                  , HH.ClassName "z-20"
+                                  , HH.ClassName "z-30"
                                   ]
                             , HCSS.style do
                                 CSS.left $ CSS.px $ toNumber $ x - 30
@@ -495,9 +497,12 @@ main =
                             [ HH.text input ]
                   , inputLine []
                       $ TextArea
-                          ( case repl.inputMode of
-                              R.Singleline -> WithPrompt
-                              R.Multiline ->
+                          ( case { sMode: state.inputMode, rMode: repl.inputMode } of
+                              { sMode: Evaluating, rMode: _ } ->
+                                WithPromptAndLoading
+                              { sMode: _, rMode: R.Singleline } ->
+                                WithPrompt
+                              { sMode: _, rMode: R.Multiline } ->
                                 if repl.inputPool == [] then
                                   WithPrompt
                                 else
@@ -580,14 +585,15 @@ main =
     inputLine classes mode = case mode of
       Dummy input ->
         HH.div [ HP.classes $ [ HH.ClassName "flex", HH.ClassName "font-mono" ] <> classes ]
-          $ prompt WithPrompt
-          : [ HH.div [ HP.classes [ HH.ClassName "w-full", HH.ClassName "bg-gray-800" ] ]
-                [ input ]
-            ]
-      TextArea withPrompt inputMode ->
+          [ prefix WithPrompt
+          , HH.div [ HP.classes [ HH.ClassName "w-full", HH.ClassName "bg-gray-800" ] ]
+              [ input ]
+          , postfix WithPrompt
+          ]
+      TextArea mode inputMode ->
         HH.div [ HP.classes $ [ HH.ClassName "flex", HH.ClassName "font-mono" ] <> classes ]
-          $ prompt withPrompt
-          : [ HH.div
+          [ prefix mode
+          , HH.div
                 [ HP.classes
                     $ [ HH.ClassName "flex", HH.ClassName "relative", HH.ClassName "w-full" ]
                 ]
@@ -629,16 +635,53 @@ main =
                     ]
                     [ HH.text state.input ]
                 ]
+            , postfix mode
             ]
       where
-      prompt withPrompt =
+      prefix mode =
         HH.div
           [ HP.classes
               $ [ HH.ClassName "flex", HH.ClassName "justify-end" ]
-              <> case withPrompt of
-                  WithPrompt -> []
+              <> case mode of
                   WithoutPrompt -> [ HH.ClassName "invisible" ]
+                  _ -> []
           ]
           [ HH.span [ HP.classes [ HH.ClassName "mr-1" ] ]
               [ HH.text ">" ]
           ]
+
+      postfix mode =
+        HH.div
+          [ HP.classes $
+              [ HH.ClassName "z-20"
+              , HH.ClassName "w-6"
+              , HH.ClassName "h-6"
+              , HH.ClassName "flex"
+              , HH.ClassName "items-center"
+              , HH.ClassName "justify-center"
+              ] <> case mode of
+                WithPromptAndLoading -> []
+                _ -> [ HH.ClassName "invisible" ]
+          ]
+          [ HH.div
+              [ HP.classes
+                  [ HH.ClassName "w-4"
+                  , HH.ClassName "h-4"
+                  , HH.ClassName "rounded-full"
+                  , HH.ClassName "border-gray-700"
+                  , HH.ClassName "border-r-2"
+                  , HH.ClassName "border-b-2"
+                  ]
+              , HCSS.style do
+                  CSS.animation
+                    (CSS.AnimationName $ CSS.value "one-rotation")
+                    (CSS.sec 1.2)
+                    CSS.linear
+                    (CSS.sec 0.0)
+                    CSS.infinite
+                    CSS.normalAnimationDirection
+                    CSS.forwards
+              ]
+              []
+          ]
+

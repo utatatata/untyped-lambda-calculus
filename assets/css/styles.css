@@ -15,3 +15,12 @@ body {
   height: 100%;
   width: 100%;
 }
+
+@keyframes one-rotation {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
