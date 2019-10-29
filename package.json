@@ -15,6 +15,7 @@
     "deploy:purescript": "node ./scripts/deployPureScript",
     "deploy:css": "node ./scripts/deployCSS",
     "deploy:html": "node ./scripts/deployHTML",
+    "deploy:netlify": "node ./scripts/deployNetlify",
     "predeploy": "del public && mkdirp public",
     "deploy": "run-p deploy:*"
   },
