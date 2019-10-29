@@ -52,6 +52,7 @@ type State
 data InputMode
   = Inputting
   | SelectingHistory Int
+  | Evaluating
 
 data Tab
   = REPL
@@ -75,7 +76,6 @@ data Action
   | Eval
   | KeyDown WK.KeyboardEvent
   | KeyUp WK.KeyboardEvent
-  | CalculateTextAreaRows String
   | HistoryUp
   | HistoryDown
   | SwitchTab Tab
@@ -96,7 +96,7 @@ getString (BehindTextAreaId) = "behind-textarea-id"
 
 data InputLineMode w i
   = Dummy (HHC.HTML w i)
-  | TextArea PromptMode
+  | TextArea PromptMode InputMode
 
 data PromptMode
   = WithPrompt
@@ -134,10 +134,10 @@ main =
     StopPropagation e -> H.liftEffect $ WE.stopPropagation e
     Input input -> do
       H.modify_ _ { input = input, inputMode = Inputting }
-      handleAction $ CalculateTextAreaRows input
+      calculateTextAreaRows
     Eval -> do
       handleAction HiddenSelectOrCopyPopup
-      { input, repl } <- H.get
+      { input, repl } <- H.modify _ { inputMode = Evaluating }
       H.modify_
         _
           { input = ""
@@ -145,6 +145,7 @@ main =
           , inputMode = Inputting
           , repl = R.eval input repl
           }
+      handleAction $ FocusById TextAreaId
     KeyDown e -> case WK.key e of
       "Enter" -> handleAction $ Composition [ PreventDefault $ WK.toEvent e ]
       "ArrowUp" -> handleAction $ Composition [ PreventDefault $ WK.toEvent e, HistoryUp ]
@@ -159,60 +160,21 @@ main =
         else
           handleAction $ Composition [ PreventDefault $ WK.toEvent e, Eval ]
       _ -> pure unit
-    CalculateTextAreaRows input -> do
-      maybeRows <-
-        H.liftEffect
-          $ do
-              maybeElem <- byId BehindTextAreaId
-              case maybeElem of
-                Nothing -> pure Nothing
-                Just elem -> do
-                  height <- DE.scrollHeight elem
-                  lineHeight <- WHS.lineHeight =<< WHS.getComputedStyle elem =<< WH.window
-                  ( let
-                      rows = round $ height / lineHeight
-
-                      last = S.takeRight 1 input
-                    in
-                      -- consider an empty line
-                      if last == "" || last == "\n" || last == "\r" then
-                        pure $ Just $ rows + 1
-                      else
-                        pure $ Just rows
-                  )
-      case maybeRows of
-        Nothing -> pure unit
-        Just rows -> H.modify_ _ { textAreaRows = rows }
     HistoryUp -> do
       handleAction HiddenSelectOrCopyPopup
       { inputMode } <- H.get
-      ( let
-          n = case inputMode of
-            Inputting -> 0
-            SelectingHistory current -> current + 1
-        in
-          do
-            { repl: R.REPL { history } } <- H.get
-            case history `index` ((length history) - n - 1) of
-              -- oldest history
-              Nothing -> pure unit
-              Just { input, output: _ } -> do
-                H.modify_ _ { input = input, inputMode = SelectingHistory n }
-                handleAction $ CalculateTextAreaRows input
-      )
+      case inputMode of
+        Evaluating -> pure unit
+        Inputting -> setHistory 0
+        SelectingHistory current -> setHistory $ current + 1
     HistoryDown -> do
       handleAction HiddenSelectOrCopyPopup
       { inputMode } <- H.get
       case inputMode of
+        Evaluating -> pure unit
         Inputting -> pure unit
         SelectingHistory 0 -> H.modify_ _ { input = "", textAreaRows = 1, inputMode = Inputting }
-        SelectingHistory n -> do
-          { repl: R.REPL { history } } <- H.get
-          case history `index` ((length history) - n) of
-            Nothing -> pure unit
-            Just { input, output: _ } -> do
-              H.modify_ _ { input = input, inputMode = SelectingHistory $ n - 1 }
-              handleAction $ CalculateTextAreaRows input
+        SelectingHistory current -> setHistory $ current - 1
     SwitchTab tab -> do
       handleAction HiddenSelectOrCopyPopup
       H.modify_ _ { tab = tab }
@@ -229,7 +191,7 @@ main =
     Select selectedStr -> do
       handleAction HiddenSelectOrCopyPopup
       H.modify_ _ { input = selectedStr, inputMode = Inputting }
-      handleAction $ CalculateTextAreaRows selectedStr
+      calculateTextAreaRows
     CopyToClipboard str -> do
       handleAction HiddenSelectOrCopyPopup
       H.liftEffect
@@ -253,6 +215,41 @@ main =
         Just transfer -> do
           WHEDT.setData MediaType.textPlain str transfer
           WE.preventDefault event
+
+    calculateTextAreaRows = do
+      { input } <- H.get
+      maybeRows <-
+        H.liftEffect
+          $ do
+              maybeElem <- byId BehindTextAreaId
+              case maybeElem of
+                Nothing -> pure Nothing
+                Just elem -> do
+                  height <- DE.scrollHeight elem
+                  lineHeight <- WHS.lineHeight =<< WHS.getComputedStyle elem =<< WH.window
+                  ( let
+                      rows = round $ height / lineHeight
+
+                      last = S.takeRight 1 input
+                    in
+                      -- consider an empty line
+                      if last == "" || last == "\n" || last == "\r" then
+                        pure $ Just $ rows + 1
+                      else
+                        pure $ Just rows
+                  )
+      case maybeRows of
+        Nothing -> pure unit
+        Just rows -> H.modify_ _ { textAreaRows = rows }
+
+    setHistory historyIndex = do
+      { repl: R.REPL { history } } <- H.get
+      case history `index` ((length history) - historyIndex - 1) of
+        -- oldest history
+        Nothing -> pure unit
+        Just { input, output: _ } -> do
+          H.modify_ _ { input = input, inputMode = SelectingHistory historyIndex }
+          calculateTextAreaRows
 
   render state =
     let
@@ -496,14 +493,17 @@ main =
                       # map \input ->
                           HH.span [ HP.classes [ HH.ClassName "break-all", HH.ClassName "whitespace-pre-wrap" ] ]
                             [ HH.text input ]
-                  , inputLine [] $ TextArea
-                      $ case repl.inputMode of
-                          R.Singleline -> WithPrompt
-                          R.Multiline ->
-                            if repl.inputPool == [] then
-                              WithPrompt
-                            else
-                              WithoutPrompt
+                  , inputLine []
+                      $ TextArea
+                          ( case repl.inputMode of
+                              R.Singleline -> WithPrompt
+                              R.Multiline ->
+                                if repl.inputPool == [] then
+                                  WithPrompt
+                                else
+                                  WithoutPrompt
+                          )
+                          state.inputMode
                   ]
             , HH.section
                 [ HP.classes
@@ -584,7 +584,7 @@ main =
           : [ HH.div [ HP.classes [ HH.ClassName "w-full", HH.ClassName "bg-gray-800" ] ]
                 [ input ]
             ]
-      TextArea withPrompt ->
+      TextArea withPrompt inputMode ->
         HH.div [ HP.classes $ [ HH.ClassName "flex", HH.ClassName "font-mono" ] <> classes ]
           $ prompt withPrompt
           : [ HH.div
@@ -593,6 +593,10 @@ main =
                 ]
                 [ HH.textarea
                     [ HP.id_ $ getString TextAreaId
+                    , HP.disabled
+                        $ case inputMode of
+                            Evaluating -> true
+                            _ -> false
                     , HP.classes
                         [ HH.ClassName "w-full"
                         , HH.ClassName "apperance-none"
