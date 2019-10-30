@@ -15,6 +15,7 @@ module UntypedLambda.Core
   ) where
 
 import Prelude
+import Control.Monad.Trampoline (Trampoline)
 import Data.Array (filter, union, notElem)
 import Data.Display (class Display, display)
 import Data.Foldable (foldl, foldr)
@@ -171,17 +172,18 @@ asExpression (VApplication (VIdentApp id arg)) = Application (Variable id) $ asE
 
 asExpression (VApplication (VAppApp vApp arg)) = (Application `on` asExpression) (VApplication vApp) arg
 
-callByValue :: Expression -> Value
-callByValue (Variable id) = VVariable id
+callByValue :: Expression -> Trampoline Value
+callByValue (Variable id) = pure $ VVariable id
 
-callByValue (LambdaAbstraction bound body) = VLambdaAbstraction bound $ callByValue body
+callByValue (LambdaAbstraction bound body) = VLambdaAbstraction bound <$> callByValue body
 
-callByValue (Application expr arg) =
-  callByValue expr
-    # case _ of
-        VVariable id -> VApplication $ VIdentApp id $ callByValue arg
-        vlambda@(VLambdaAbstraction _ _) -> callByValue $ (betaReduction `on` asExpression) vlambda $ callByValue arg
-        VApplication vApp -> VApplication $ VAppApp vApp $ callByValue arg
+callByValue (Application expr arg) = do
+  vexpr <- callByValue expr
+  varg <- callByValue arg
+  case vexpr of
+    VVariable id -> pure $ VApplication $ VIdentApp id varg
+    VLambdaAbstraction _ _ -> callByValue $ (betaReduction `on` asExpression) vexpr varg
+    VApplication vapp -> pure $ VApplication $ VAppApp vapp varg
 
 type Environment
   = Array (Tuple Identifier Value)

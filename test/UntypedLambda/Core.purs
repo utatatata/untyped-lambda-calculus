@@ -7,6 +7,7 @@ module Test.UntypedLambda.Core
   ) where
 
 import Prelude
+import Control.Monad.Trampoline (runTrampoline)
 import Data.Tuple (Tuple(..))
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
@@ -636,4 +637,4 @@ testCallByValue =
 
   vtwo = VLambdaAbstraction "f" (VLambdaAbstraction "x" (VApplication $ VIdentApp "f" (VApplication $ VIdentApp "f" (VVariable "x"))))
 
-  eval expr = callByValue $ withEnvironment libs expr
+  eval expr = runTrampoline $ callByValue $ withEnvironment libs expr

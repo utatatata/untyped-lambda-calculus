@@ -8,6 +8,7 @@ module UntypedLambda.REPL
 
 import Prelude
 import Control.Alt ((<|>))
+import Control.Monad.Trampoline (runTrampoline)
 import Data.Array (index, snoc)
 import Data.Display (display)
 import Data.Either (Either(..))
@@ -58,23 +59,25 @@ data Result
   | Help
 
 init :: REPL
-init = REPL
-  { env: _init.env
-  , history: []
-  , inputMode: Singleline
-  , inputPool: []
-  }
+init =
+  REPL
+    { env: _init.env
+    , history: []
+    , inputMode: Singleline
+    , inputPool: []
+    }
   where
-  REPL _init = Prime.prime
-    # split (Pattern "\n")
-    # foldl (flip eval)
-      ( REPL
-          { env: []
-          , history: []
-          , inputMode: Singleline
-          , inputPool: []
-          }
-      )
+  REPL _init =
+    Prime.prime
+      # split (Pattern "\n")
+      # foldl (flip eval)
+          ( REPL
+              { env: []
+              , history: []
+              , inputMode: Singleline
+              , inputPool: []
+              }
+          )
 
 eval :: String -> REPL -> REPL
 eval input (REPL repl@{ env: _, history: _, inputMode: Multiline, inputPool }) = case P.runParser input endMultiline of
@@ -123,7 +126,7 @@ eval input (REPL repl) = case P.runParser input parser of
           }
   Right (Definition name expr) ->
     let
-      value = C.callByValue $ C.withEnvironment repl.env expr
+      value = runTrampoline $ C.callByValue $ C.withEnvironment repl.env expr
     in
       REPL
         $ repl
@@ -139,7 +142,7 @@ eval input (REPL repl) = case P.runParser input parser of
           { history =
             repl.history
               `snoc`
-                { input, output: Just $ display $ C.asExpression $ C.callByValue $ C.withEnvironment repl.env expr }
+                { input, output: Just $ display $ C.asExpression $ runTrampoline $ C.callByValue $ C.withEnvironment repl.env expr }
           }
   Left error ->
     let
