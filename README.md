@@ -20,6 +20,8 @@
 - [ ] Design for Tablet
 - [x] Implement Prime as a source code
 - [x] Add a history select/copy popup for Smartphones
+- [ ] Add a routing and configure Netlify redirections for SPA
 
 ## Bugs
+
 - [ ] Repair Call by value
