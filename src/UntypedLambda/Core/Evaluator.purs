@@ -1,4 +1,13 @@
-module UntypedLambda.Core.Evaluator where
+module UntypedLambda.Core.Evaluator
+  ( Environment
+  , Substitution(..)
+  , freeVariables
+  , alphaConversion
+  , betaReduction
+  , etaConversion
+  , callByValue
+  , withEnvironment
+  ) where
 
 import Prelude
 import Data.Array (filter, notElem, union)
