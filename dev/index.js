@@ -1,3 +1,3 @@
-const Editor = require("../output/Editor");
+const Main = require("../output/Main");
 
-Editor.main();
+Main.main();
