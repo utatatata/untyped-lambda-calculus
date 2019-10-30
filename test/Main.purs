@@ -5,7 +5,7 @@ import Effect (Effect)
 import Effect.Aff (launchAff_)
 import Test.Spec.Reporter (consoleReporter)
 import Test.Spec.Runner (runSpec)
-import Test.UntypedLambda.Core.Term (testAlphaConversion, testBetaReduction, testCallByValue, testEtaConversion, testFreeVariables)
+import Test.UntypedLambda.Core.Evaluator (testAlphaConversion, testBetaReduction, testCallByValue, testEtaConversion, testFreeVariables)
 import Test.UntypedLambda.Core.Parser (testTerm)
 
 main :: Effect Unit

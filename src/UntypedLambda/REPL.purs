@@ -1,5 +1,5 @@
 module UntypedLambda.REPL
-  ( module UntypedLambda.Core.Term
+  ( module UntypedLambda.Core.Evaluator
   , REPL(..)
   , InputMode(..)
   , init
@@ -21,14 +21,15 @@ import Text.Parsing.Parser (parseErrorMessage, parseErrorPosition, runParser) as
 import Text.Parsing.Parser.Combinators (try) as P
 import Text.Parsing.Parser.Pos (Position(..)) as P
 import Text.Parsing.Parser.String (eof, string) as P
-import UntypedLambda.Core.Term (Environment)
 import UntypedLambda.Core.Term as T
+import UntypedLambda.Core.Evaluator as E
+import UntypedLambda.Core.Evaluator (Environment)
 import UntypedLambda.Core.Parser (term, identifier, spaces) as P
 import UntypedLambda.Core.Prime as Prime
 
 newtype REPL
   = REPL
-  { env :: T.Environment
+  { env :: E.Environment
   , history :: Array { input :: String, output :: Maybe String }
   , inputMode :: InputMode
   , inputPool :: Array String
@@ -126,7 +127,7 @@ eval input (REPL repl) = case P.runParser input parser of
           }
   Right (Definition name tm) ->
     let
-      normalForm = runTrampoline $ T.callByValue $ T.withEnvironment repl.env tm
+      normalForm = runTrampoline $ E.callByValue $ E.withEnvironment repl.env tm
     in
       REPL
         $ repl
@@ -142,7 +143,7 @@ eval input (REPL repl) = case P.runParser input parser of
           { history =
             repl.history
               `snoc`
-                { input, output: Just $ display $ T.asTerm $ runTrampoline $ T.callByValue $ T.withEnvironment repl.env tm }
+                { input, output: Just $ display $ T.asTerm $ runTrampoline $ E.callByValue $ E.withEnvironment repl.env tm }
           }
   Left error ->
     let

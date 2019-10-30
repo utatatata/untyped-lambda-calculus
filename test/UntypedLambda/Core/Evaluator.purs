@@ -1,4 +1,4 @@
-module Test.UntypedLambda.Core.Term
+module Test.UntypedLambda.Core.Evaluator
   ( testFreeVariables
   , testAlphaConversion
   , testBetaReduction
@@ -11,7 +11,8 @@ import Control.Monad.Trampoline (runTrampoline)
 import Data.Tuple (Tuple(..))
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
-import UntypedLambda.Core.Term (Term(..), Substitution(..), NFApplication(..), NormalForm(..), alphaConversion, betaReduction, callByValue, etaConversion, freeVariables, withEnvironment)
+import UntypedLambda.Core.Term (Term(..), NFApplication(..), NormalForm(..))
+import UntypedLambda.Core.Evaluator (Substitution(..), alphaConversion, betaReduction, callByValue, etaConversion, freeVariables, withEnvironment)
 
 testFreeVariables :: Spec Unit
 testFreeVariables =
