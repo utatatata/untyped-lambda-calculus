@@ -1,7 +1,6 @@
 module Main where
 
 import Prelude
-
 import CSS as CSS
 import Data.Array (index, length)
 import Data.Display (display)
@@ -498,10 +497,8 @@ main =
                   , inputLine []
                       $ TextArea
                           ( case { sMode: state.inputMode, rMode: repl.inputMode } of
-                              { sMode: Evaluating, rMode: _ } ->
-                                WithPromptAndLoading
-                              { sMode: _, rMode: R.Singleline } ->
-                                WithPrompt
+                              { sMode: Evaluating, rMode: _ } -> WithPromptAndLoading
+                              { sMode: _, rMode: R.Singleline } -> WithPrompt
                               { sMode: _, rMode: R.Multiline } ->
                                 if repl.inputPool == [] then
                                   WithPrompt
@@ -517,8 +514,8 @@ main =
                         _ -> [ HH.ClassName "hidden" ]
                 ]
                 [ HH.div [ HP.classes [ HH.ClassName "flex", HH.ClassName "flex-col" ] ] $ repl.env
-                    # map \(Tuple name value) ->
-                        HH.div [ HP.classes [ HH.ClassName "break-all" ] ] [ HH.text $ name <> " = " <> display value ]
+                    # map \(Tuple name normalForm) ->
+                        HH.div [ HP.classes [ HH.ClassName "break-all" ] ] [ HH.text $ name <> " = " <> display normalForm ]
                 ]
             , HH.section
                 [ HP.classes
@@ -535,9 +532,9 @@ main =
                     [ HH.h3 [ HP.classes [ HH.ClassName "text-lg", HH.ClassName "mb-2" ] ] [ HH.text "Syntax of λ expression" ]
                     , HH.div [ HP.classes [ HH.ClassName "flex", HH.ClassName "ml-8", HH.ClassName "mt-2", HH.ClassName "mb-4" ] ]
                         [ HH.div [ HP.classes [ HH.ClassName "flex", HH.ClassName "flex-col", HH.ClassName "mr-2" ] ]
-                            [ HH.div [] [ HH.text "<expression> ::=" ]
-                            , HH.div [] [ HH.text "<expression> ::=" ]
-                            , HH.div [] [ HH.text "<expression> ::=" ]
+                            [ HH.div [] [ HH.text "<term> ::=" ]
+                            , HH.div [] [ HH.text "<term> ::=" ]
+                            , HH.div [] [ HH.text "<term> ::=" ]
                             ]
                         , HH.div [ HP.classes [ HH.ClassName "flex", HH.ClassName "flex-col" ] ]
                             [ HH.div [] [ HH.text "<variable>" ]
@@ -557,7 +554,7 @@ main =
                     , HH.section [ HP.classes [ HH.ClassName "mb-4" ] ]
                         [ HH.h4 [ HP.classes [ HH.ClassName "mb-2" ] ] [ HH.text "2. Lambda Abstractions" ]
                         , HH.div [ HP.classes [ HH.ClassName "ml-8", HH.ClassName "mt-2", HH.ClassName "mb-4" ] ]
-                            [ HH.div [] [ HH.text "<lambda abstraction> ::= (<lambda><args>.<expression>)" ]
+                            [ HH.div [] [ HH.text "<lambda abstraction> ::= (<lambda><args>.<term>)" ]
                             , HH.div [] [ HH.text "<lambda> ::= λ | \\" ]
                             , HH.div [] [ HH.text "<args> ::= <identifier> | <identifier> <args>" ]
                             ]
@@ -570,7 +567,7 @@ main =
                     , HH.section [ HP.classes [ HH.ClassName "mb-4" ] ]
                         [ HH.h4 [ HP.classes [ HH.ClassName "mb-2" ] ] [ HH.text "3. Applications" ]
                         , HH.div [ HP.classes [ HH.ClassName "ml-8", HH.ClassName "mt-2", HH.ClassName "mb-4" ] ]
-                            [ HH.div [] [ HH.text "<application> ::= (<expression> <expression>)" ]
+                            [ HH.div [] [ HH.text "<application> ::= (<term> <term>)" ]
                             ]
                         , HH.div [ HP.classes [ HH.ClassName "ml-4", HH.ClassName "break-words" ] ]
                             [ HH.p [] [ HH.text "Applications are left-associative." ]
@@ -594,49 +591,49 @@ main =
         HH.div [ HP.classes $ [ HH.ClassName "flex", HH.ClassName "font-mono" ] <> classes ]
           [ prefix mode
           , HH.div
-                [ HP.classes
-                    $ [ HH.ClassName "flex", HH.ClassName "relative", HH.ClassName "w-full" ]
-                ]
-                [ HH.textarea
-                    [ HP.id_ $ getString TextAreaId
-                    , HP.disabled
-                        $ case inputMode of
-                            Evaluating -> true
-                            _ -> false
-                    , HP.classes
-                        [ HH.ClassName "w-full"
-                        , HH.ClassName "apperance-none"
-                        , HH.ClassName "focus:outline-none"
-                        , HH.ClassName "bg-gray-800"
-                        , HH.ClassName "resize-none"
-                        -- prevent the appearance of scroll bar
-                        , HH.ClassName "overflow-y-hidden"
-                        -- to hide a absolute div below
-                        , HH.ClassName "z-10"
-                        , HH.ClassName "break-all"
-                        ]
-                    , HP.rows state.textAreaRows
-                    , HP.autofocus true
-                    , HP.value state.input
-                    , HE.onKeyDown $ Just <<< KeyDown
-                    , HE.onKeyUp $ Just <<< KeyUp
-                    , HE.onValueInput $ Just <<< Input
-                    ]
-                , HH.div
-                    [ HP.id_ $ getString BehindTextAreaId
-                    , HP.classes
-                        [ HH.ClassName "absolute"
-                        , HH.ClassName "w-full"
-                        , HH.ClassName "break-all"
-                        , HH.ClassName "bg-gray-900"
-                        , HH.ClassName "text-gray-900"
-                        , HH.ClassName "whitespace-pre-wrap"
-                        ]
-                    ]
-                    [ HH.text state.input ]
-                ]
-            , postfix mode
-            ]
+              [ HP.classes
+                  $ [ HH.ClassName "flex", HH.ClassName "relative", HH.ClassName "w-full" ]
+              ]
+              [ HH.textarea
+                  [ HP.id_ $ getString TextAreaId
+                  , HP.disabled
+                      $ case inputMode of
+                          Evaluating -> true
+                          _ -> false
+                  , HP.classes
+                      [ HH.ClassName "w-full"
+                      , HH.ClassName "apperance-none"
+                      , HH.ClassName "focus:outline-none"
+                      , HH.ClassName "bg-gray-800"
+                      , HH.ClassName "resize-none"
+                      -- prevent the appearance of scroll bar
+                      , HH.ClassName "overflow-y-hidden"
+                      -- to hide a absolute div below
+                      , HH.ClassName "z-10"
+                      , HH.ClassName "break-all"
+                      ]
+                  , HP.rows state.textAreaRows
+                  , HP.autofocus true
+                  , HP.value state.input
+                  , HE.onKeyDown $ Just <<< KeyDown
+                  , HE.onKeyUp $ Just <<< KeyUp
+                  , HE.onValueInput $ Just <<< Input
+                  ]
+              , HH.div
+                  [ HP.id_ $ getString BehindTextAreaId
+                  , HP.classes
+                      [ HH.ClassName "absolute"
+                      , HH.ClassName "w-full"
+                      , HH.ClassName "break-all"
+                      , HH.ClassName "bg-gray-900"
+                      , HH.ClassName "text-gray-900"
+                      , HH.ClassName "whitespace-pre-wrap"
+                      ]
+                  ]
+                  [ HH.text state.input ]
+              ]
+          , postfix mode
+          ]
       where
       prefix mode =
         HH.div
@@ -652,16 +649,17 @@ main =
 
       postfix mode =
         HH.div
-          [ HP.classes $
-              [ HH.ClassName "z-20"
-              , HH.ClassName "w-6"
-              , HH.ClassName "h-6"
-              , HH.ClassName "flex"
-              , HH.ClassName "items-center"
-              , HH.ClassName "justify-center"
-              ] <> case mode of
-                WithPromptAndLoading -> []
-                _ -> [ HH.ClassName "invisible" ]
+          [ HP.classes
+              $ [ HH.ClassName "z-20"
+                , HH.ClassName "w-6"
+                , HH.ClassName "h-6"
+                , HH.ClassName "flex"
+                , HH.ClassName "items-center"
+                , HH.ClassName "justify-center"
+                ]
+              <> case mode of
+                  WithPromptAndLoading -> []
+                  _ -> [ HH.ClassName "invisible" ]
           ]
           [ HH.div
               [ HP.classes
@@ -684,4 +682,3 @@ main =
               ]
               []
           ]
-

@@ -1,14 +1,14 @@
-module UntypedLambda.Core
+module UntypedLambda.Core.Term
   ( Identifier
-  , Expression(..)
+  , Term(..)
   , freeVariables
   , Substitution(..)
   , alphaConversion
   , betaReduction
   , etaConversion
-  , Value(..)
-  , VApplication(..)
-  , asExpression
+  , NormalForm(..)
+  , NFApplication(..)
+  , asTerm
   , callByValue
   , Environment
   , withEnvironment
@@ -27,32 +27,32 @@ import Data.Tuple (Tuple(..))
 type Identifier
   = String
 
-data Expression
+data Term
   = Variable Identifier
-  | LambdaAbstraction Identifier Expression
-  | Application Expression Expression
+  | LambdaAbstraction Identifier Term
+  | Application Term Term
 
-instance eqExpression :: Eq Expression where
+instance eqTerm :: Eq Term where
   eq (Variable x) (Variable y) = eq x y
   eq (LambdaAbstraction x m) (LambdaAbstraction y n) = eq x y && eq m n
   eq (Application x a) (Application y b) = eq x y && eq a b
   eq _ _ = false
 
-instance showExpression :: Show Expression where
+instance showTerm :: Show Term where
   show (Variable x) = "(Variable " <> show x <> ")"
   show (LambdaAbstraction x m) = "(LambdaAbstraction " <> show x <> " " <> show m <> ")"
   show (Application x a) = "(Application " <> show x <> " " <> show a <> ")"
 
-instance displayExpression :: Display Expression where
-  display :: Expression -> String
+instance displayTerm :: Display Term where
+  display :: Term -> String
   display = case _ of
     Variable x -> x
     -- drop 'λ'
     LambdaAbstraction bound body@(LambdaAbstraction _ _) -> "λ" <> bound <> " " <> (drop 1 $ display body)
     LambdaAbstraction bound body -> "λ" <> bound <> "." <> (display body)
-    Application expr arg ->
+    Application term arg ->
       joinWith " "
-        [ case expr of
+        [ case term of
             Variable var -> var
             -- left-associative
             lambda@(LambdaAbstraction _ _) -> paren $ display lambda
@@ -69,17 +69,17 @@ instance displayExpression :: Display Expression where
     where
     paren x = joinWith x [ "(", ")" ]
 
-freeVariables :: Expression -> Array Identifier
+freeVariables :: Term -> Array Identifier
 freeVariables (Variable x) = [ x ]
 
 freeVariables (LambdaAbstraction bound body) = freeVariables body # filter ((/=) bound)
 
-freeVariables (Application expr arg) = (union `on` freeVariables) expr arg
+freeVariables (Application term arg) = (union `on` freeVariables) term arg
 
 data Substitution
-  = Substitution Identifier Expression
+  = Substitution Identifier Term
 
-alphaConversion :: Substitution -> Expression -> Expression
+alphaConversion :: Substitution -> Term -> Term
 alphaConversion (Substitution match replacement) (Variable x)
   | match == x = replacement
 
@@ -100,14 +100,14 @@ alphaConversion sub@(Substitution _ replacement) lambda@(LambdaAbstraction bound
   newBound = rename bound replacement
 
   -- rename x N, if x ∉ FV(N) then x else if x_0 ∉ FV(N) then x_0 else if x_1 ∉ FV(N) then x_1 else if ...
-  rename :: String -> Expression -> String
-  rename var expr =
+  rename :: String -> Term -> String
+  rename var term =
     if var `notElem` freeVars then
       var
     else
       recur 0
     where
-    freeVars = freeVariables expr
+    freeVars = freeVariables term
 
     recur n =
       let
@@ -115,84 +115,84 @@ alphaConversion sub@(Substitution _ replacement) lambda@(LambdaAbstraction bound
       in
         if renamed `notElem` freeVars then renamed else recur $ n + 1
 
-alphaConversion sub (Application expr arg) = (Application `on` alphaConversion sub) expr arg
+alphaConversion sub (Application term arg) = (Application `on` alphaConversion sub) term arg
 
-betaReduction :: Expression -> Expression -> Expression
+betaReduction :: Term -> Term -> Term
 betaReduction (LambdaAbstraction bound body) arg = alphaConversion (Substitution bound arg) body
 
-betaReduction expr arg = Application expr arg
+betaReduction term arg = Application term arg
 
-etaConversion :: Identifier -> Expression -> Expression
-etaConversion bound body@(Application expr (Variable var)) =
-  if bound == var && bound `notElem` freeVariables expr then
-    expr
+etaConversion :: Identifier -> Term -> Term
+etaConversion bound body@(Application term (Variable var)) =
+  if bound == var && bound `notElem` freeVariables term then
+    term
   else
     LambdaAbstraction bound body
 
 etaConversion bound body = LambdaAbstraction bound body
 
-data Value
-  = VVariable Identifier
-  | VLambdaAbstraction Identifier Value
-  | VApplication VApplication
+data NormalForm
+  = NFVariable Identifier
+  | NFLambdaAbstraction Identifier NormalForm
+  | NFApplication NFApplication
 
-data VApplication
-  = VIdentApp Identifier Value
-  | VAppApp VApplication Value
+data NFApplication
+  = NFIdentApp Identifier NormalForm
+  | NFAppApp NFApplication NormalForm
 
-instance eqValue :: Eq Value where
-  eq (VVariable x) (VVariable y) = eq x y
-  eq (VLambdaAbstraction x f) (VLambdaAbstraction y g) = eq x y && eq f g
-  eq (VApplication x) (VApplication y) = eq x y
+instance eqNormalForm :: Eq NormalForm where
+  eq (NFVariable x) (NFVariable y) = eq x y
+  eq (NFLambdaAbstraction x f) (NFLambdaAbstraction y g) = eq x y && eq f g
+  eq (NFApplication x) (NFApplication y) = eq x y
   eq _ _ = false
 
-instance showValue :: Show Value where
-  show (VVariable id) = "(VVariable " <> show id <> ")"
-  show (VLambdaAbstraction x f) = "(VLambdaAbstraction " <> show x <> " " <> show f <> ")"
-  show (VApplication x) = "(VApplication " <> show x <> ")"
+instance showNormalForm :: Show NormalForm where
+  show (NFVariable id) = "(NFVariable " <> show id <> ")"
+  show (NFLambdaAbstraction x f) = "(NFLambdaAbstraction " <> show x <> " " <> show f <> ")"
+  show (NFApplication x) = "(NFApplication " <> show x <> ")"
 
-instance displayValue :: Display Value where
-  display value = display $ asExpression value
+instance displayNormalForm :: Display NormalForm where
+  display nomalForm = display $ asTerm nomalForm
 
-instance eqVApplication :: Eq VApplication where
-  eq (VIdentApp v x) (VIdentApp w y) = eq v w && eq x y
-  eq (VAppApp f x) (VAppApp g y) = eq f g && eq x y
+instance eqNFApplication :: Eq NFApplication where
+  eq (NFIdentApp v x) (NFIdentApp w y) = eq v w && eq x y
+  eq (NFAppApp f x) (NFAppApp g y) = eq f g && eq x y
   eq _ _ = false
 
-instance showVApplication :: Show VApplication where
-  show (VIdentApp x y) = "(VIdentApp " <> show x <> " " <> show y <> ")"
-  show (VAppApp x y) = "(VAppApp " <> show x <> " " <> show y <> ")"
+instance showNFApplication :: Show NFApplication where
+  show (NFIdentApp x y) = "(NFIdentApp " <> show x <> " " <> show y <> ")"
+  show (NFAppApp x y) = "(NFAppApp " <> show x <> " " <> show y <> ")"
 
-asExpression :: Value -> Expression
-asExpression (VVariable id) = Variable id
+asTerm :: NormalForm -> Term
+asTerm (NFVariable id) = Variable id
 
-asExpression (VLambdaAbstraction bound body) = LambdaAbstraction bound $ asExpression body
+asTerm (NFLambdaAbstraction bound body) = LambdaAbstraction bound $ asTerm body
 
-asExpression (VApplication (VIdentApp id arg)) = Application (Variable id) $ asExpression arg
+asTerm (NFApplication (NFIdentApp id arg)) = Application (Variable id) $ asTerm arg
 
-asExpression (VApplication (VAppApp vApp arg)) = (Application `on` asExpression) (VApplication vApp) arg
+asTerm (NFApplication (NFAppApp nfapp arg)) = (Application `on` asTerm) (NFApplication nfapp) arg
 
-callByValue :: Expression -> Trampoline Value
-callByValue (Variable id) = pure $ VVariable id
+callByValue :: Term -> Trampoline NormalForm
+callByValue (Variable id) = pure $ NFVariable id
 
-callByValue (LambdaAbstraction bound body) = VLambdaAbstraction bound <$> callByValue body
+callByValue (LambdaAbstraction bound body) = NFLambdaAbstraction bound <$> callByValue body
 
-callByValue (Application expr arg) = do
-  vexpr <- callByValue expr
-  varg <- callByValue arg
-  case vexpr of
-    VVariable id -> pure $ VApplication $ VIdentApp id varg
-    VLambdaAbstraction _ _ -> callByValue $ (betaReduction `on` asExpression) vexpr varg
-    VApplication vapp -> pure $ VApplication $ VAppApp vapp varg
+callByValue (Application term arg) = do
+  nfterm <- callByValue term
+  nfarg <- callByValue arg
+  case nfterm of
+    NFVariable id -> pure $ NFApplication $ NFIdentApp id nfarg
+    NFLambdaAbstraction _ _ -> callByValue $ (betaReduction `on` asTerm) nfterm nfarg
+    NFApplication nfapp -> pure $ NFApplication $ NFAppApp nfapp nfarg
 
 type Environment
-  = Array (Tuple Identifier Value)
+  = Array (Tuple Identifier NormalForm)
 
-withEnvironment :: Environment -> Expression -> Expression
-withEnvironment env expression =
+withEnvironment :: Environment -> Term -> Term
+withEnvironment env term =
   let
     names = env # map \(Tuple name _) -> name
 
-    values = env # map \(Tuple _ value) -> asExpression value
+    nomalForms = env # map \(Tuple _ nomalForm) -> asTerm nomalForm
   in
-    foldl (\expr value -> Application expr value) (foldr (\name expr -> LambdaAbstraction name expr) expression names) values
+    foldl (\tm nomalForm -> Application tm nomalForm) (foldr (\name tm -> LambdaAbstraction name tm) term names) nomalForms

@@ -1,18 +1,18 @@
-module Test.UntypedLambda.Parser
-  ( testExpression
+module Test.UntypedLambda.Core.Parser
+  ( testTerm
   ) where
 
 import Prelude
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
 import Text.Parsing.Parser (runParser)
-import UntypedLambda.Core (Expression(..))
-import UntypedLambda.Parser (expression)
+import UntypedLambda.Core.Term (Term(..))
+import UntypedLambda.Core.Parser (term)
 
-testExpression :: Spec Unit
-testExpression =
+testTerm :: Spec Unit
+testTerm =
   describe "UntypedLambda.Parser" do
-    describe "expression" do
+    describe "term" do
       testValid "x" $ Variable "x"
       testValid "zero?" $ Variable "zero?"
       testValid "(λx.x)" $ LambdaAbstraction "x" (Variable "x")
@@ -34,4 +34,4 @@ testExpression =
   where
   testValid code result =
     it code do
-      runParser code expression `shouldEqual` pure result
+      runParser code term `shouldEqual` pure result
