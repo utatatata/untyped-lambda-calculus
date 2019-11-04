@@ -1,0 +1,9 @@
+# redirect a default domain
+http://untyped-lambda-calculus.netlify.com/*  https://untyped-lambda-calculus.utakuma.info/:splat  301!
+
+# redirect a default domain with TLS cert
+https://untyped-lambda-calculus.netlify.com/*  https://untyped-lambda-calculus.utakuma.info/:splat  301!
+
+# redirect a custom domain
+http://untyped-lambda-calculus.utakuma.info/*  https://untyped-lambda-calculus.utakuma.info/:splat  301!
+
