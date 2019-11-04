@@ -1,4 +1,4 @@
-module Test.UntypedLambda.Core
+module Test.UntypedLambda.Core.Evaluator
   ( testFreeVariables
   , testAlphaConversion
   , testBetaReduction
@@ -7,10 +7,12 @@ module Test.UntypedLambda.Core
   ) where
 
 import Prelude
+import Control.Monad.Trampoline (runTrampoline)
 import Data.Tuple (Tuple(..))
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
-import UntypedLambda.Core (Expression(..), Substitution(..), VApplication(..), Value(..), alphaConversion, betaReduction, callByValue, etaConversion, freeVariables, withEnvironment)
+import UntypedLambda.Core.Term (Term(..), NFApplication(..), NormalForm(..))
+import UntypedLambda.Core.Evaluator (Substitution(..), alphaConversion, betaReduction, callByValue, etaConversion, freeVariables, withEnvironment)
 
 testFreeVariables :: Spec Unit
 testFreeVariables =
@@ -448,7 +450,7 @@ testBetaReduction =
           it "(x y) (z w) ≡ (x y) (z w)" do
             shouldSame (Application (Variable "x") (Variable "y")) (Application (Variable "z") (Variable "w"))
   where
-  shouldSame expr arg = betaReduction expr arg `shouldEqual` Application expr arg
+  shouldSame tm arg = betaReduction tm arg `shouldEqual` Application tm arg
 
 testEtaConversion :: Spec Unit
 testEtaConversion =
@@ -553,87 +555,87 @@ testCallByValue =
   describe "UntypedLambda.Core" do
     describe "callByValue" do
       it "succ zero ≡ one" do
-        eval (Application (Variable "succ") (Variable "zero")) `shouldEqual` vone
+        eval (Application (Variable "succ") (Variable "zero")) `shouldEqual` nfone
       it "succ one ≡ two" do
-        eval (Application (Variable "succ") (Variable "one")) `shouldEqual` vtwo
+        eval (Application (Variable "succ") (Variable "one")) `shouldEqual` nftwo
       it "plus zero zero ≡ zero" do
-        eval (Application (Application (Variable "plus") (Variable "zero")) (Variable "zero")) `shouldEqual` vzero
+        eval (Application (Application (Variable "plus") (Variable "zero")) (Variable "zero")) `shouldEqual` nfzero
       it "plus zero one ≡ one" do
-        eval (Application (Application (Variable "plus") (Variable "zero")) (Variable "one")) `shouldEqual` vone
+        eval (Application (Application (Variable "plus") (Variable "zero")) (Variable "one")) `shouldEqual` nfone
       it "plus one zero ≡ one" do
-        eval (Application (Application (Variable "plus") (Variable "one")) (Variable "zero")) `shouldEqual` vone
+        eval (Application (Application (Variable "plus") (Variable "one")) (Variable "zero")) `shouldEqual` nfone
       it "pred zero ≡ zero" do
-        eval (Application (Variable "pred") $ Variable "zero") `shouldEqual` vzero
+        eval (Application (Variable "pred") $ Variable "zero") `shouldEqual` nfzero
       it "pred one ≡ zero" do
-        eval (Application (Variable "pred") $ Variable "one") `shouldEqual` vzero
+        eval (Application (Variable "pred") $ Variable "one") `shouldEqual` nfzero
       it "pred two ≡ one" do
-        eval (Application (Variable "pred") $ Variable "two") `shouldEqual` vone
+        eval (Application (Variable "pred") $ Variable "two") `shouldEqual` nfone
   where
   libs =
     [ Tuple "zero"
-        $ VLambdaAbstraction "f"
-        $ VLambdaAbstraction "x"
-        $ VVariable "x"
+        $ NFLambdaAbstraction "f"
+        $ NFLambdaAbstraction "x"
+        $ NFVariable "x"
     , Tuple "one"
-        $ VLambdaAbstraction "f"
-        $ VLambdaAbstraction "x"
-        $ VApplication
-        $ VIdentApp "f"
-        $ VVariable "x"
+        $ NFLambdaAbstraction "f"
+        $ NFLambdaAbstraction "x"
+        $ NFApplication
+        $ NFIdentApp "f"
+        $ NFVariable "x"
     , Tuple "two"
-        $ VLambdaAbstraction "f"
-        $ VLambdaAbstraction "x"
-        $ VApplication
-        $ VIdentApp "f"
-        $ VApplication
-        $ VIdentApp "f"
-        $ VVariable "x"
+        $ NFLambdaAbstraction "f"
+        $ NFLambdaAbstraction "x"
+        $ NFApplication
+        $ NFIdentApp "f"
+        $ NFApplication
+        $ NFIdentApp "f"
+        $ NFVariable "x"
     , Tuple "succ"
-        $ VLambdaAbstraction "n"
-        $ VLambdaAbstraction "f"
-        $ VLambdaAbstraction "x"
-        $ VApplication
-        $ VIdentApp "f"
-        $ VApplication
-        $ VAppApp (VIdentApp "n" $ VVariable "f")
-        $ VVariable "x"
+        $ NFLambdaAbstraction "n"
+        $ NFLambdaAbstraction "f"
+        $ NFLambdaAbstraction "x"
+        $ NFApplication
+        $ NFIdentApp "f"
+        $ NFApplication
+        $ NFAppApp (NFIdentApp "n" $ NFVariable "f")
+        $ NFVariable "x"
     , Tuple "plus"
-        $ VLambdaAbstraction "m"
-        $ VLambdaAbstraction "n"
-        $ VLambdaAbstraction "f"
-        $ VLambdaAbstraction "x"
-        $ VApplication
-        $ VAppApp (VIdentApp "m" $ VVariable "f")
-        $ VApplication
-        $ VAppApp (VIdentApp "n" $ VVariable "f")
-        $ VVariable "x"
+        $ NFLambdaAbstraction "m"
+        $ NFLambdaAbstraction "n"
+        $ NFLambdaAbstraction "f"
+        $ NFLambdaAbstraction "x"
+        $ NFApplication
+        $ NFAppApp (NFIdentApp "m" $ NFVariable "f")
+        $ NFApplication
+        $ NFAppApp (NFIdentApp "n" $ NFVariable "f")
+        $ NFVariable "x"
     , Tuple "pred"
-        $ VLambdaAbstraction "n"
-        $ VLambdaAbstraction "f"
-        $ VLambdaAbstraction "x"
-        $ VApplication
-        $ VAppApp
-            ( VAppApp
-                ( VIdentApp "n"
-                    $ VLambdaAbstraction "g"
-                    $ VLambdaAbstraction "h"
-                    $ VApplication
-                    $ VIdentApp "h"
-                    $ VApplication
-                    $ VIdentApp "g"
-                    $ VVariable "f"
+        $ NFLambdaAbstraction "n"
+        $ NFLambdaAbstraction "f"
+        $ NFLambdaAbstraction "x"
+        $ NFApplication
+        $ NFAppApp
+            ( NFAppApp
+                ( NFIdentApp "n"
+                    $ NFLambdaAbstraction "g"
+                    $ NFLambdaAbstraction "h"
+                    $ NFApplication
+                    $ NFIdentApp "h"
+                    $ NFApplication
+                    $ NFIdentApp "g"
+                    $ NFVariable "f"
                 )
-                $ VLambdaAbstraction "u"
-                $ VVariable "x"
+                $ NFLambdaAbstraction "u"
+                $ NFVariable "x"
             )
-        $ VLambdaAbstraction "u"
-        $ VVariable "u"
+        $ NFLambdaAbstraction "u"
+        $ NFVariable "u"
     ]
 
-  vzero = VLambdaAbstraction "f" (VLambdaAbstraction "x" (VVariable "x"))
+  nfzero = NFLambdaAbstraction "f" (NFLambdaAbstraction "x" (NFVariable "x"))
 
-  vone = VLambdaAbstraction "f" (VLambdaAbstraction "x" (VApplication $ VIdentApp "f" (VVariable "x")))
+  nfone = NFLambdaAbstraction "f" (NFLambdaAbstraction "x" (NFApplication $ NFIdentApp "f" (NFVariable "x")))
 
-  vtwo = VLambdaAbstraction "f" (VLambdaAbstraction "x" (VApplication $ VIdentApp "f" (VApplication $ VIdentApp "f" (VVariable "x"))))
+  nftwo = NFLambdaAbstraction "f" (NFLambdaAbstraction "x" (NFApplication $ NFIdentApp "f" (NFApplication $ NFIdentApp "f" (NFVariable "x"))))
 
-  eval expr = callByValue $ withEnvironment libs expr
+  eval tm = runTrampoline $ callByValue $ withEnvironment libs tm

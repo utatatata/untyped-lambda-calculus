@@ -10,6 +10,7 @@ You can edit this file as you like.
     , "css"
     , "effect"
     , "foldable-traversable"
+    , "free"
     , "halogen"
     , "halogen-css"
     , "lists"

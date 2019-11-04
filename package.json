@@ -1,6 +1,6 @@
 {
   "name": "untyped-lambda-calculus",
-  "version": "1.8.0",
+  "version": "1.9.0",
   "description": "A PureScript implementation of the untyped lambda calculus",
   "repository": "git@github.com:utatatata/untyped-lambda-calculus.git",
   "author": "utakuma <i@utakuma.info>",
@@ -15,6 +15,7 @@
     "deploy:purescript": "node ./scripts/deployPureScript",
     "deploy:css": "node ./scripts/deployCSS",
     "deploy:html": "node ./scripts/deployHTML",
+    "deploy:netlify": "node ./scripts/deployNetlify",
     "predeploy": "del public && mkdirp public",
     "deploy": "run-p deploy:*"
   },

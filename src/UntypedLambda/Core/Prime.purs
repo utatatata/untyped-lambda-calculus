@@ -1,4 +1,4 @@
-module UntypedLambda.Prime
+module UntypedLambda.Core.Prime
   ( prime
   ) where
 

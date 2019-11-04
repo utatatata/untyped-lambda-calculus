@@ -1,8 +1,8 @@
-module Editor where
+module Main where
 
 import Prelude
 import CSS as CSS
-import Data.Array (index, length, (:))
+import Data.Array (index, length)
 import Data.Display (display)
 import Data.Foldable (for_)
 import Data.Int (round, toNumber)
@@ -52,6 +52,7 @@ type State
 data InputMode
   = Inputting
   | SelectingHistory Int
+  | Evaluating
 
 data Tab
   = REPL
@@ -75,7 +76,6 @@ data Action
   | Eval
   | KeyDown WK.KeyboardEvent
   | KeyUp WK.KeyboardEvent
-  | CalculateTextAreaRows String
   | HistoryUp
   | HistoryDown
   | SwitchTab Tab
@@ -96,10 +96,11 @@ getString (BehindTextAreaId) = "behind-textarea-id"
 
 data InputLineMode w i
   = Dummy (HHC.HTML w i)
-  | TextArea PromptMode
+  | TextArea PromptMode InputMode
 
 data PromptMode
   = WithPrompt
+  | WithPromptAndLoading
   | WithoutPrompt
 
 main :: Effect Unit
@@ -134,10 +135,10 @@ main =
     StopPropagation e -> H.liftEffect $ WE.stopPropagation e
     Input input -> do
       H.modify_ _ { input = input, inputMode = Inputting }
-      handleAction $ CalculateTextAreaRows input
+      calculateTextAreaRows
     Eval -> do
       handleAction HiddenSelectOrCopyPopup
-      { input, repl } <- H.get
+      { input, repl } <- H.modify _ { inputMode = Evaluating }
       H.modify_
         _
           { input = ""
@@ -145,6 +146,7 @@ main =
           , inputMode = Inputting
           , repl = R.eval input repl
           }
+      handleAction $ FocusById TextAreaId
     KeyDown e -> case WK.key e of
       "Enter" -> handleAction $ Composition [ PreventDefault $ WK.toEvent e ]
       "ArrowUp" -> handleAction $ Composition [ PreventDefault $ WK.toEvent e, HistoryUp ]
@@ -159,60 +161,21 @@ main =
         else
           handleAction $ Composition [ PreventDefault $ WK.toEvent e, Eval ]
       _ -> pure unit
-    CalculateTextAreaRows input -> do
-      maybeRows <-
-        H.liftEffect
-          $ do
-              maybeElem <- byId BehindTextAreaId
-              case maybeElem of
-                Nothing -> pure Nothing
-                Just elem -> do
-                  height <- DE.scrollHeight elem
-                  lineHeight <- WHS.lineHeight =<< WHS.getComputedStyle elem =<< WH.window
-                  ( let
-                      rows = round $ height / lineHeight
-
-                      last = S.takeRight 1 input
-                    in
-                      -- consider an empty line
-                      if last == "" || last == "\n" || last == "\r" then
-                        pure $ Just $ rows + 1
-                      else
-                        pure $ Just rows
-                  )
-      case maybeRows of
-        Nothing -> pure unit
-        Just rows -> H.modify_ _ { textAreaRows = rows }
     HistoryUp -> do
       handleAction HiddenSelectOrCopyPopup
       { inputMode } <- H.get
-      ( let
-          n = case inputMode of
-            Inputting -> 0
-            SelectingHistory current -> current + 1
-        in
-          do
-            { repl: R.REPL { history } } <- H.get
-            case history `index` ((length history) - n - 1) of
-              -- oldest history
-              Nothing -> pure unit
-              Just { input, output: _ } -> do
-                H.modify_ _ { input = input, inputMode = SelectingHistory n }
-                handleAction $ CalculateTextAreaRows input
-      )
+      case inputMode of
+        Evaluating -> pure unit
+        Inputting -> setHistory 0
+        SelectingHistory current -> setHistory $ current + 1
     HistoryDown -> do
       handleAction HiddenSelectOrCopyPopup
       { inputMode } <- H.get
       case inputMode of
+        Evaluating -> pure unit
         Inputting -> pure unit
         SelectingHistory 0 -> H.modify_ _ { input = "", textAreaRows = 1, inputMode = Inputting }
-        SelectingHistory n -> do
-          { repl: R.REPL { history } } <- H.get
-          case history `index` ((length history) - n) of
-            Nothing -> pure unit
-            Just { input, output: _ } -> do
-              H.modify_ _ { input = input, inputMode = SelectingHistory $ n - 1 }
-              handleAction $ CalculateTextAreaRows input
+        SelectingHistory current -> setHistory $ current - 1
     SwitchTab tab -> do
       handleAction HiddenSelectOrCopyPopup
       H.modify_ _ { tab = tab }
@@ -229,7 +192,7 @@ main =
     Select selectedStr -> do
       handleAction HiddenSelectOrCopyPopup
       H.modify_ _ { input = selectedStr, inputMode = Inputting }
-      handleAction $ CalculateTextAreaRows selectedStr
+      calculateTextAreaRows
     CopyToClipboard str -> do
       handleAction HiddenSelectOrCopyPopup
       H.liftEffect
@@ -253,6 +216,41 @@ main =
         Just transfer -> do
           WHEDT.setData MediaType.textPlain str transfer
           WE.preventDefault event
+
+    calculateTextAreaRows = do
+      { input } <- H.get
+      maybeRows <-
+        H.liftEffect
+          $ do
+              maybeElem <- byId BehindTextAreaId
+              case maybeElem of
+                Nothing -> pure Nothing
+                Just elem -> do
+                  height <- DE.scrollHeight elem
+                  lineHeight <- WHS.lineHeight =<< WHS.getComputedStyle elem =<< WH.window
+                  ( let
+                      rows = round $ height / lineHeight
+
+                      last = S.takeRight 1 input
+                    in
+                      -- consider an empty line
+                      if last == "" || last == "\n" || last == "\r" then
+                        pure $ Just $ rows + 1
+                      else
+                        pure $ Just rows
+                  )
+      case maybeRows of
+        Nothing -> pure unit
+        Just rows -> H.modify_ _ { textAreaRows = rows }
+
+    setHistory historyIndex = do
+      { repl: R.REPL { history } } <- H.get
+      case history `index` ((length history) - historyIndex - 1) of
+        -- oldest history
+        Nothing -> pure unit
+        Just { input, output: _ } -> do
+          H.modify_ _ { input = input, inputMode = SelectingHistory historyIndex }
+          calculateTextAreaRows
 
   render state =
     let
@@ -384,7 +382,7 @@ main =
                                 $ [ HH.ClassName "absolute"
                                   , HH.ClassName "flex"
                                   , HH.ClassName "flex-col"
-                                  , HH.ClassName "z-20"
+                                  , HH.ClassName "z-30"
                                   ]
                             , HCSS.style do
                                 CSS.left $ CSS.px $ toNumber $ x - 30
@@ -496,14 +494,18 @@ main =
                       # map \input ->
                           HH.span [ HP.classes [ HH.ClassName "break-all", HH.ClassName "whitespace-pre-wrap" ] ]
                             [ HH.text input ]
-                  , inputLine [] $ TextArea
-                      $ case repl.inputMode of
-                          R.Singleline -> WithPrompt
-                          R.Multiline ->
-                            if repl.inputPool == [] then
-                              WithPrompt
-                            else
-                              WithoutPrompt
+                  , inputLine []
+                      $ TextArea
+                          ( case { sMode: state.inputMode, rMode: repl.inputMode } of
+                              { sMode: Evaluating, rMode: _ } -> WithPromptAndLoading
+                              { sMode: _, rMode: R.Singleline } -> WithPrompt
+                              { sMode: _, rMode: R.Multiline } ->
+                                if repl.inputPool == [] then
+                                  WithPrompt
+                                else
+                                  WithoutPrompt
+                          )
+                          state.inputMode
                   ]
             , HH.section
                 [ HP.classes
@@ -512,8 +514,8 @@ main =
                         _ -> [ HH.ClassName "hidden" ]
                 ]
                 [ HH.div [ HP.classes [ HH.ClassName "flex", HH.ClassName "flex-col" ] ] $ repl.env
-                    # map \(Tuple name value) ->
-                        HH.div [ HP.classes [ HH.ClassName "break-all" ] ] [ HH.text $ name <> " = " <> display value ]
+                    # map \(Tuple name normalForm) ->
+                        HH.div [ HP.classes [ HH.ClassName "break-all" ] ] [ HH.text $ name <> " = " <> display normalForm ]
                 ]
             , HH.section
                 [ HP.classes
@@ -530,9 +532,9 @@ main =
                     [ HH.h3 [ HP.classes [ HH.ClassName "text-lg", HH.ClassName "mb-2" ] ] [ HH.text "Syntax of λ expression" ]
                     , HH.div [ HP.classes [ HH.ClassName "flex", HH.ClassName "ml-8", HH.ClassName "mt-2", HH.ClassName "mb-4" ] ]
                         [ HH.div [ HP.classes [ HH.ClassName "flex", HH.ClassName "flex-col", HH.ClassName "mr-2" ] ]
-                            [ HH.div [] [ HH.text "<expression> ::=" ]
-                            , HH.div [] [ HH.text "<expression> ::=" ]
-                            , HH.div [] [ HH.text "<expression> ::=" ]
+                            [ HH.div [] [ HH.text "<term> ::=" ]
+                            , HH.div [] [ HH.text "<term> ::=" ]
+                            , HH.div [] [ HH.text "<term> ::=" ]
                             ]
                         , HH.div [ HP.classes [ HH.ClassName "flex", HH.ClassName "flex-col" ] ]
                             [ HH.div [] [ HH.text "<variable>" ]
@@ -552,7 +554,7 @@ main =
                     , HH.section [ HP.classes [ HH.ClassName "mb-4" ] ]
                         [ HH.h4 [ HP.classes [ HH.ClassName "mb-2" ] ] [ HH.text "2. Lambda Abstractions" ]
                         , HH.div [ HP.classes [ HH.ClassName "ml-8", HH.ClassName "mt-2", HH.ClassName "mb-4" ] ]
-                            [ HH.div [] [ HH.text "<lambda abstraction> ::= (<lambda><args>.<expression>)" ]
+                            [ HH.div [] [ HH.text "<lambda abstraction> ::= (<lambda><args>.<term>)" ]
                             , HH.div [] [ HH.text "<lambda> ::= λ | \\" ]
                             , HH.div [] [ HH.text "<args> ::= <identifier> | <identifier> <args>" ]
                             ]
@@ -565,7 +567,7 @@ main =
                     , HH.section [ HP.classes [ HH.ClassName "mb-4" ] ]
                         [ HH.h4 [ HP.classes [ HH.ClassName "mb-2" ] ] [ HH.text "3. Applications" ]
                         , HH.div [ HP.classes [ HH.ClassName "ml-8", HH.ClassName "mt-2", HH.ClassName "mb-4" ] ]
-                            [ HH.div [] [ HH.text "<application> ::= (<expression> <expression>)" ]
+                            [ HH.div [] [ HH.text "<application> ::= (<term> <term>)" ]
                             ]
                         , HH.div [ HP.classes [ HH.ClassName "ml-4", HH.ClassName "break-words" ] ]
                             [ HH.p [] [ HH.text "Applications are left-associative." ]
@@ -580,61 +582,103 @@ main =
     inputLine classes mode = case mode of
       Dummy input ->
         HH.div [ HP.classes $ [ HH.ClassName "flex", HH.ClassName "font-mono" ] <> classes ]
-          $ prompt WithPrompt
-          : [ HH.div [ HP.classes [ HH.ClassName "w-full", HH.ClassName "bg-gray-800" ] ]
-                [ input ]
-            ]
-      TextArea withPrompt ->
+          [ prefix WithPrompt
+          , HH.div [ HP.classes [ HH.ClassName "w-full", HH.ClassName "bg-gray-800" ] ]
+              [ input ]
+          , postfix WithPrompt
+          ]
+      TextArea mode inputMode ->
         HH.div [ HP.classes $ [ HH.ClassName "flex", HH.ClassName "font-mono" ] <> classes ]
-          $ prompt withPrompt
-          : [ HH.div
-                [ HP.classes
-                    $ [ HH.ClassName "flex", HH.ClassName "relative", HH.ClassName "w-full" ]
-                ]
-                [ HH.textarea
-                    [ HP.id_ $ getString TextAreaId
-                    , HP.classes
-                        [ HH.ClassName "w-full"
-                        , HH.ClassName "apperance-none"
-                        , HH.ClassName "focus:outline-none"
-                        , HH.ClassName "bg-gray-800"
-                        , HH.ClassName "resize-none"
-                        -- prevent the appearance of scroll bar
-                        , HH.ClassName "overflow-y-hidden"
-                        -- to hide a absolute div below
-                        , HH.ClassName "z-10"
-                        , HH.ClassName "break-all"
-                        ]
-                    , HP.rows state.textAreaRows
-                    , HP.autofocus true
-                    , HP.value state.input
-                    , HE.onKeyDown $ Just <<< KeyDown
-                    , HE.onKeyUp $ Just <<< KeyUp
-                    , HE.onValueInput $ Just <<< Input
-                    ]
-                , HH.div
-                    [ HP.id_ $ getString BehindTextAreaId
-                    , HP.classes
-                        [ HH.ClassName "absolute"
-                        , HH.ClassName "w-full"
-                        , HH.ClassName "break-all"
-                        , HH.ClassName "bg-gray-900"
-                        , HH.ClassName "text-gray-900"
-                        , HH.ClassName "whitespace-pre-wrap"
-                        ]
-                    ]
-                    [ HH.text state.input ]
-                ]
-            ]
+          [ prefix mode
+          , HH.div
+              [ HP.classes
+                  $ [ HH.ClassName "flex", HH.ClassName "relative", HH.ClassName "w-full" ]
+              ]
+              [ HH.textarea
+                  [ HP.id_ $ getString TextAreaId
+                  , HP.disabled
+                      $ case inputMode of
+                          Evaluating -> true
+                          _ -> false
+                  , HP.classes
+                      [ HH.ClassName "w-full"
+                      , HH.ClassName "apperance-none"
+                      , HH.ClassName "focus:outline-none"
+                      , HH.ClassName "bg-gray-800"
+                      , HH.ClassName "resize-none"
+                      -- prevent the appearance of scroll bar
+                      , HH.ClassName "overflow-y-hidden"
+                      -- to hide a absolute div below
+                      , HH.ClassName "z-10"
+                      , HH.ClassName "break-all"
+                      ]
+                  , HP.rows state.textAreaRows
+                  , HP.autofocus true
+                  , HP.value state.input
+                  , HE.onKeyDown $ Just <<< KeyDown
+                  , HE.onKeyUp $ Just <<< KeyUp
+                  , HE.onValueInput $ Just <<< Input
+                  ]
+              , HH.div
+                  [ HP.id_ $ getString BehindTextAreaId
+                  , HP.classes
+                      [ HH.ClassName "absolute"
+                      , HH.ClassName "w-full"
+                      , HH.ClassName "break-all"
+                      , HH.ClassName "bg-gray-900"
+                      , HH.ClassName "text-gray-900"
+                      , HH.ClassName "whitespace-pre-wrap"
+                      ]
+                  ]
+                  [ HH.text state.input ]
+              ]
+          , postfix mode
+          ]
       where
-      prompt withPrompt =
+      prefix mode =
         HH.div
           [ HP.classes
               $ [ HH.ClassName "flex", HH.ClassName "justify-end" ]
-              <> case withPrompt of
-                  WithPrompt -> []
+              <> case mode of
                   WithoutPrompt -> [ HH.ClassName "invisible" ]
+                  _ -> []
           ]
           [ HH.span [ HP.classes [ HH.ClassName "mr-1" ] ]
               [ HH.text ">" ]
+          ]
+
+      postfix mode =
+        HH.div
+          [ HP.classes
+              $ [ HH.ClassName "z-20"
+                , HH.ClassName "w-6"
+                , HH.ClassName "h-6"
+                , HH.ClassName "flex"
+                , HH.ClassName "items-center"
+                , HH.ClassName "justify-center"
+                ]
+              <> case mode of
+                  WithPromptAndLoading -> []
+                  _ -> [ HH.ClassName "invisible" ]
+          ]
+          [ HH.div
+              [ HP.classes
+                  [ HH.ClassName "w-4"
+                  , HH.ClassName "h-4"
+                  , HH.ClassName "rounded-full"
+                  , HH.ClassName "border-gray-700"
+                  , HH.ClassName "border-r-2"
+                  , HH.ClassName "border-b-2"
+                  ]
+              , HCSS.style do
+                  CSS.animation
+                    (CSS.AnimationName $ CSS.value "one-rotation")
+                    (CSS.sec 1.2)
+                    CSS.linear
+                    (CSS.sec 0.0)
+                    CSS.infinite
+                    CSS.normalAnimationDirection
+                    CSS.forwards
+              ]
+              []
           ]

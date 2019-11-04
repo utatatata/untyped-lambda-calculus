@@ -1,5 +1,5 @@
 module UntypedLambda.REPL
-  ( module UntypedLambda.Core
+  ( module UntypedLambda.Core.Evaluator
   , REPL(..)
   , InputMode(..)
   , init
@@ -8,6 +8,7 @@ module UntypedLambda.REPL
 
 import Prelude
 import Control.Alt ((<|>))
+import Control.Monad.Trampoline (runTrampoline)
 import Data.Array (index, snoc)
 import Data.Display (display)
 import Data.Either (Either(..))
@@ -20,14 +21,15 @@ import Text.Parsing.Parser (parseErrorMessage, parseErrorPosition, runParser) as
 import Text.Parsing.Parser.Combinators (try) as P
 import Text.Parsing.Parser.Pos (Position(..)) as P
 import Text.Parsing.Parser.String (eof, string) as P
-import UntypedLambda.Core (Environment)
-import UntypedLambda.Core as C
-import UntypedLambda.Parser (expression, identifier, spaces) as P
-import UntypedLambda.Prime as Prime
+import UntypedLambda.Core.Term as T
+import UntypedLambda.Core.Evaluator as E
+import UntypedLambda.Core.Evaluator (Environment)
+import UntypedLambda.Core.Parser (term, identifier, spaces) as P
+import UntypedLambda.Core.Prime as Prime
 
 newtype REPL
   = REPL
-  { env :: Environment
+  { env :: E.Environment
   , history :: Array { input :: String, output :: Maybe String }
   , inputMode :: InputMode
   , inputPool :: Array String
@@ -51,30 +53,32 @@ instance showInputMode :: Show InputMode where
   show Multiline = "Multiline"
 
 data Result
-  = Expression C.Expression
-  | Definition String C.Expression
+  = Term T.Term
+  | Definition String T.Term
   | StartMultiline
   | EndMultiline
   | Help
 
 init :: REPL
-init = REPL
-  { env: _init.env
-  , history: []
-  , inputMode: Singleline
-  , inputPool: []
-  }
+init =
+  REPL
+    { env: _init.env
+    , history: []
+    , inputMode: Singleline
+    , inputPool: []
+    }
   where
-  REPL _init = Prime.prime
-    # split (Pattern "\n")
-    # foldl (flip eval)
-      ( REPL
-          { env: []
-          , history: []
-          , inputMode: Singleline
-          , inputPool: []
-          }
-      )
+  REPL _init =
+    Prime.prime
+      # split (Pattern "\n")
+      # foldl (flip eval)
+          ( REPL
+              { env: []
+              , history: []
+              , inputMode: Singleline
+              , inputPool: []
+              }
+          )
 
 eval :: String -> REPL -> REPL
 eval input (REPL repl@{ env: _, history: _, inputMode: Multiline, inputPool }) = case P.runParser input endMultiline of
@@ -118,28 +122,28 @@ eval input (REPL repl) = case P.runParser input parser of
 .end                          End a multiline mode
 .help                         Show this help menu
 
-<identifier> = <expression>   Add a new binding into the Environment. An expression `M` under the Environment `a = b` is equivalent to ((λa.M) b)"""
+<identifier> = <term>   Add a new binding into the Environment. An term `M` under the Environment `a = b` is equivalent to ((λa.M) b)"""
                 }
           }
-  Right (Definition name expr) ->
+  Right (Definition name tm) ->
     let
-      value = C.callByValue $ C.withEnvironment repl.env expr
+      normalForm = runTrampoline $ E.callByValue $ E.withEnvironment repl.env tm
     in
       REPL
         $ repl
-            { env = repl.env `snoc` Tuple name value
+            { env = repl.env `snoc` Tuple name normalForm
             , history =
               repl.history
                 `snoc`
-                  { input, output: Just $ display $ C.asExpression value }
+                  { input, output: Just $ display $ T.asTerm normalForm }
             }
-  Right (Expression expr) ->
+  Right (Term tm) ->
     REPL
       $ repl
           { history =
             repl.history
               `snoc`
-                { input, output: Just $ display $ C.asExpression $ C.callByValue $ C.withEnvironment repl.env expr }
+                { input, output: Just $ display $ T.asTerm $ runTrampoline $ E.callByValue $ E.withEnvironment repl.env tm }
           }
   Left error ->
     let
@@ -173,9 +177,9 @@ eval input (REPL repl) = case P.runParser input parser of
     _ <- P.spaces
     name <- P.identifier
     _ <- P.spaces *> P.string "=" <* P.spaces
-    body <- P.expression
+    body <- P.term
     pure $ Definition name body
 
-  _expression = Expression <$> P.expression
+  _term = Term <$> P.term
 
-  parser = P.try startMultiline <|> P.try endMultiline <|> P.try help <|> P.try define <|> _expression
+  parser = P.try startMultiline <|> P.try endMultiline <|> P.try help <|> P.try define <|> _term

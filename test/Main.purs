@@ -5,8 +5,8 @@ import Effect (Effect)
 import Effect.Aff (launchAff_)
 import Test.Spec.Reporter (consoleReporter)
 import Test.Spec.Runner (runSpec)
-import Test.UntypedLambda.Core (testAlphaConversion, testBetaReduction, testCallByValue, testEtaConversion, testFreeVariables)
-import Test.UntypedLambda.Parser (testExpression)
+import Test.UntypedLambda.Core.Evaluator (testAlphaConversion, testBetaReduction, testCallByValue, testEtaConversion, testFreeVariables)
+import Test.UntypedLambda.Core.Parser (testTerm)
 
 main :: Effect Unit
 main = do
@@ -17,4 +17,4 @@ main = do
         testBetaReduction
         testEtaConversion
         testCallByValue
-        testExpression
+        testTerm
