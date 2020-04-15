@@ -1,6 +1,6 @@
 # The untyped λ calculus
 
-[Web REPL](https://https://untyped-lambda-calculus.netlify.com/)
+[Web REPL](https://untyped-lambda-calculus.netlify.com/)
 
 ## Requirements
 
